@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPM → P6 v13.1 | Cosedil PMO</title>
+    <!-- Foglio di stile esterno -->
+    <link rel="stylesheet" href="style.css">
+    <!-- SheetJS per parsing Excel lato client -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header class="header">
+            <div class="logo">
+                <div class="logo-icon">CP</div>
+                <div class="logo-text">
+                    <h1>CPM → P6 Bridge</h1>
+                    <p>Cosedil PMO — Budget CPM vs SIL vs P6</p>
+                </div>
+            </div>
+            <div class="version-badge">v13.1</div>
+        </header>
+
+        <div class="main-grid">
+            <!-- 4 Upload Cards -->
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon budget">💰</div>
+                    <div><div class="card-title">Budget CPM</div><div class="card-subtitle">Foglio BUDGET</div></div>
+                </div>
+                <div class="upload-area" data-target="budget">
+                    <div class="upload-icon">📊</div>
+                    <div class="upload-text">Trascina o clicca</div>
+                    <div class="upload-hint">.xlsx</div>
+                    <div class="file-info" id="info-budget"><div class="file-name"></div></div>
+                </div>
+                <div class="status-badge pending"><span class="status-dot"></span> In attesa</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon sil-dir">📈</div>
+                    <div><div class="card-title">SIL Diretti</div><div class="card-subtitle">Foglio SIL diretti</div></div>
+                </div>
+                <div class="upload-area" data-target="sildir">
+                    <div class="upload-icon">📋</div>
+                    <div class="upload-text">Trascina o clicca</div>
+                    <div class="upload-hint">.xlsx</div>
+                    <div class="file-info" id="info-sildir"><div class="file-name"></div></div>
+                </div>
+                <div class="status-badge pending"><span class="status-dot"></span> In attesa</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon sil-ind">📋</div>
+                    <div><div class="card-title">SIL Indiretti</div><div class="card-subtitle">Foglio SIL indiretti (Opz.)</div></div>
+                </div>
+                <div class="upload-area" data-target="silind">
+                    <div class="upload-icon">📄</div>
+                    <div class="upload-text">Trascina o clicca</div>
+                    <div class="upload-hint">.xlsx</div>
+                    <div class="file-info" id="info-silind"><div class="file-name"></div></div>
+                </div>
+                <div class="status-badge pending"><span class="status-dot"></span> Opzionale</div>
+            </div>
+
+            <div class="card">
+                <div class="card-header">
+                    <div class="card-icon p6">📅</div>
+                    <div><div class="card-title">Export P6</div><div class="card-subtitle">Foglio EXPORT_P6</div></div>
+                </div>
+                <div class="upload-area" data-target="p6">
+                    <div class="upload-icon">🗓️</div>
+                    <div class="upload-text">Trascina o clicca</div>
+                    <div class="upload-hint">.xlsx</div>
+                    <div class="file-info" id="info-p6"><div class="file-name"></div></div>
+                </div>
+                <div class="status-badge pending"><span class="status-dot"></span> In attesa</div>
+            </div>
+
+            <!-- Control Panel -->
+            <div class="control-panel full-width">
+                <div class="button-group">
+                    <button class="btn btn-primary" id="btn-calculate" disabled>
+                        <span class="spinner"></span>
+                        <span class="btn-text">▶ Calcola Bridge</span>
+                    </button>
+                    <button class="btn btn-secondary" onclick="resetAll()">↻ Reset</button>
+                </div>
+                <div class="alerts-container" id="alerts"></div>
+                
+                <div class="steps-container">
+                    <div class="steps-title">🔗 Come funziona il Bridge v13.1</div>
+                    <div class="steps">
+                        <div class="step"><div class="step-number">1</div><div class="step-content"><h4>SIL Articolo → Budget Articolo → ottieni Cod. WBS</h4><p>Mapping automatico degli articoli SIL sul budget CPM</p></div></div>
+                        <div class="step"><div class="step-number">2</div><div class="step-content"><h4>Cod. WBS → Export P6 wbs_id → lista attività P6</h4><p>Collegamento dei WBS alle attività presenti in Primavera P6</p></div></div>
+                        <div class="step"><div class="step-number">3</div><div class="step-content"><h4>Distribuisci SIL proporzionalmente al act_cost</h4><p>Ripartizione dei costi SIL sulle attività P6 in base ai costi effettivi</p></div></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section (Inline) -->
+            <div class="full-width" id="results-container">
+                <div class="results-header">
+                    <h2 style="color: var(--primary);">📊 Risultati Bridge</h2>
+                    <div class="results-stats">
+                        <div class="stat-box">WBS mappati: <strong id="stat-wbs">0</strong></div>
+                        <div class="stat-box">Attività P6: <strong id="stat-act">0</strong></div>
+                        <div class="stat-box">SIL totale: <strong id="stat-sil">€ 0</strong></div>
+                    </div>
+                </div>
+                <div class="table-wrapper">
+                    <table id="results-table">
+                        <thead>
+                            <tr>
+                                <th>Cod. WBS</th>
+                                <th>ID Attività P6</th>
+                                <th>Nome Attività</th>
+                                <th class="money">Costo P6 (€)</th>
+                                <th class="money">SIL Totale (€)</th>
+                                <th class="ratio">% Ripartizione</th>
+                                <th class="money">SIL Assegnato (€)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="results-body"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logica JavaScript esterna -->
+    <script src="script.js" defer></script>
+</body>
+</html>
