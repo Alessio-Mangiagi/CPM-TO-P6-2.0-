@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CPM to P6 v7 | Cosedil PMO</title>
+<style>
+:root{--bg:#0f172a;--bg2:#1e293b;--bg3:#334155;--tx:#e2e8f0;--tx2:#94a3b8;--tx3:#64748b;--accent:#3b82f6;--a2:#60a5fa;--green:#22c55e;--yellow:#eab308;--red:#ef4444;--orange:#f97316;--purple:#a855f7;--border:#475569;--r:8px}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+.wrap{max-width:1500px;margin:0 auto;padding:20px}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:13px 20px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:12px;gap:12px}
+.hdr-brand h1{font-size:1.15rem;font-weight:700}.hdr-brand h1 em{color:var(--a2);font-style:normal}
+.hdr-brand .sub{font-size:.67rem;color:var(--tx3);margin-top:2px}
+.hdr-meta{display:flex;align-items:center;gap:14px;flex-shrink:0}
+.meta-item .ml{font-size:.57rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px}
+.meta-item .mv{font-size:.88rem;font-weight:700;color:var(--a2)}
+.btn-export-top{padding:8px 16px;border:none;border-radius:var(--r);font-size:.74rem;font-weight:700;cursor:pointer;background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.35);transition:all .2s;display:none;align-items:center;gap:6px}
+.btn-export-top:hover{background:rgba(34,197,94,.22)}.btn-export-top.ready{display:flex}
+.pills{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:8px;padding:8px 13px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);flex:1;min-width:140px;transition:border-color .3s}
+.pill .pi{font-size:1.1rem;flex-shrink:0}.pill .pl{font-size:.58rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px}.pill .pv{font-size:.84rem;font-weight:600;margin-top:1px}
+.pill.ok{border-color:var(--green)}.pill.warn{border-color:var(--yellow)}.pill.err{border-color:var(--red)}.pill.info{border-color:var(--accent)}
+.flow{display:flex;align-items:center;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);padding:11px 16px;margin-bottom:12px}
+.fstep{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;padding:0 4px}
+.fstep::after{content:'';position:absolute;top:13px;left:calc(50% + 17px);width:calc(100% - 34px);height:2px;background:var(--border);transition:background .3s}
+.fstep:last-child::after{display:none}.fstep.done::after{background:var(--green)}
+.fdot{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.67rem;font-weight:700;border:2px solid var(--border);background:var(--bg);color:var(--tx3);transition:all .3s;margin-bottom:5px}
+.flbl{font-size:.6rem;color:var(--tx3);text-align:center;line-height:1.3}
+.fstep.done .fdot{background:var(--green);border-color:var(--green);color:#fff}.fstep.done .flbl{color:var(--green)}
+.fstep.warn .fdot{background:var(--yellow);border-color:var(--yellow);color:#000}.fstep.warn .flbl{color:var(--yellow)}
+.fstep.out .fdot{background:var(--orange);border-color:var(--orange);color:#fff}.fstep.out .flbl{color:var(--orange)}
+.bnr{padding:9px 14px;border-radius:var(--r);margin-bottom:10px;align-items:flex-start;gap:9px;font-size:.74rem;line-height:1.5;display:none}
+.bnr.show{display:flex}.bnr.warn{background:rgba(234,179,8,.07);border:1px solid rgba(234,179,8,.35)}
+.bnr.err{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.35)}
+.bnr.ok{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.35)}
+.layout{display:grid;grid-template-columns:260px 1fr;gap:14px}
+@media(max-width:840px){.layout{grid-template-columns:1fr}}
+.inp{display:flex;flex-direction:column;gap:8px}
+.inp-label{font-size:.6rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 2px;border-top:1px solid var(--border);margin-top:4px}
+.inp-label:first-child{border-top:none;margin-top:0}
+.dz{padding:11px 13px;background:var(--bg2);border:2px dashed var(--border);border-radius:var(--r);cursor:pointer;transition:all .2s;position:relative;display:flex;align-items:center;gap:9px}
+.dz:hover,.dz.over{border-color:var(--accent);background:rgba(59,130,246,.04)}
+.dz.loaded{border-color:var(--green);border-style:solid;background:rgba(34,197,94,.04)}
+.dz-ico{font-size:1.3rem;flex-shrink:0}.dz-body{flex:1;min-width:0}
+.dz-title{font-size:.76rem;font-weight:600;margin-bottom:1px}.dz-desc{font-size:.61rem;color:var(--tx2)}
+.dz-info{font-size:.59rem;color:var(--green);margin-top:3px;display:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dz.loaded .dz-info{display:block}
+.dz-badge{position:absolute;top:5px;right:6px;font-size:.55rem;padding:1px 5px;border-radius:4px;font-weight:700}
+.b-ess{background:rgba(239,68,68,.2);color:var(--red)}.b-p6{background:rgba(249,115,22,.2);color:var(--orange)}
+input[type=file]{display:none}
+.map-link{font-size:.63rem;color:var(--a2);cursor:pointer;text-align:center;text-decoration:underline;padding:3px 0;display:none;opacity:.8}
+.map-link:hover{opacity:1}.map-link.ready{display:block}
+hr.sep{border:none;border-top:1px solid var(--border);margin:7px 0}
+.btn{padding:8px 15px;border:none;border-radius:var(--r);font-size:.75rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--a2)}.btn-primary:disabled{opacity:.35;cursor:not-allowed}
+.btn-ghost{background:var(--bg3);color:var(--tx);border:1px solid var(--border)}.btn-ghost:hover{background:var(--border)}
+.btn-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3)}.btn-green:hover{background:rgba(34,197,94,.2)}
+.btn-row{display:flex;gap:7px;flex-wrap:wrap}.btn-sm{padding:6px 11px;font-size:.7rem}
+.out{display:flex;flex-direction:column;gap:12px}
+.empty{text-align:center;padding:46px 20px;color:var(--tx3)}.e-ico{font-size:2.3rem;margin-bottom:9px}
+.e-title{font-size:.9rem;font-weight:600;margin-bottom:7px}.e-desc{font-size:.76rem;line-height:1.7}
+.card{background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.card-head{padding:10px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap}
+.card-head h3{font-size:.82rem;font-weight:600}.card-head .ch-right{display:flex;align-items:center;gap:7px}
+.ch-badge{font-size:.59rem;padding:2px 8px;border-radius:7px;font-weight:700}
+.card-body{padding:13px}.card-scroll{max-height:340px;overflow-y:auto}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(105px,1fr));gap:7px}
+.kpi{padding:9px 11px;background:var(--bg);border-radius:calc(var(--r) - 2px);text-align:center;border:1px solid transparent}
+.kpi.ok{border-color:rgba(34,197,94,.22)}.kpi.err{border-color:rgba(239,68,68,.22)}.kpi.warn{border-color:rgba(234,179,8,.22)}
+.kv{font-size:1.1rem;font-weight:700;margin-bottom:2px}.kl{font-size:.57rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.3px}
+.tabs{display:flex;background:var(--bg3);overflow-x:auto;border-bottom:1px solid var(--border)}
+.tab{padding:9px 14px;font-size:.71rem;cursor:pointer;color:var(--tx2);border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--a2);border-bottom-color:var(--accent);background:rgba(59,130,246,.05)}
+.tab .tn{display:inline-block;border-radius:8px;padding:1px 5px;font-size:.57rem;margin-left:3px;font-weight:700}
+.tn-alert{background:var(--red);color:#fff}.tn-dev{background:var(--orange);color:#fff}.tn-exp{background:var(--green);color:#fff}
+.tc{display:none}.tc.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:.72rem}
+th,td{padding:6px 9px;text-align:left;border-bottom:1px solid rgba(71,85,105,.22)}
+th{background:rgba(51,65,85,.85);color:var(--tx2);font-weight:600;text-transform:uppercase;font-size:.59rem;letter-spacing:.4px;position:sticky;top:0;z-index:2}
+td{color:var(--tx)}tr:hover td{background:rgba(59,130,246,.04)}
+tr.r-total td{background:rgba(51,65,85,.6)!important;font-weight:700;border-top:2px solid var(--border)}
+tr.r-new td{background:rgba(165,85,247,.04)}tr.r-miss td{background:rgba(239,68,68,.04)}
+tr.r-over td{background:rgba(249,115,22,.04)}tr.r-under td{background:rgba(59,130,246,.04)}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+.ok-t{color:var(--green)}.warn-t{color:var(--yellow)}.err-t{color:var(--red)}.ora-t{color:var(--orange)}.pur-t{color:var(--purple)}
+.tag{display:inline-block;padding:1px 6px;border-radius:3px;font-size:.57rem;font-weight:700;letter-spacing:.3px}
+.tag-ok{background:rgba(34,197,94,.15);color:var(--green)}.tag-warn{background:rgba(234,179,8,.15);color:var(--yellow)}
+.tag-err{background:rgba(239,68,68,.15);color:var(--red)}.tag-ora{background:rgba(249,115,22,.15);color:var(--orange)}
+.tag-new{background:rgba(165,85,247,.15);color:var(--purple)}.tag-phy{background:rgba(59,130,246,.15);color:var(--a2)}
+.tag-dur{background:rgba(234,179,8,.13);color:var(--yellow)}
+.legend{display:flex;gap:9px;flex-wrap:wrap;padding:7px 13px;background:rgba(0,0,0,.12);border-top:1px solid var(--border)}
+.leg{display:flex;align-items:center;gap:4px;font-size:.6rem;color:var(--tx2)}.ldot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.dev-section{border-bottom:1px solid var(--border)}.dev-section:last-child{border-bottom:none}
+.dev-head{padding:9px 13px;display:flex;align-items:center;gap:10px;cursor:pointer;user-select:none}
+.dev-head:hover{background:rgba(255,255,255,.025)}.dev-head .dh-info{flex:1;min-width:0}
+.dev-head .dh-wbs{font-size:.76rem;font-weight:600}.dev-head .dh-tags{display:flex;gap:5px;margin-top:3px;flex-wrap:wrap}
+.dev-head .dh-right{display:flex;align-items:center;gap:10px;flex-shrink:0}
+.dev-toggle{color:var(--tx3);transition:transform .18s;font-size:.75rem}
+.dev-section.open .dev-toggle{transform:rotate(90deg)}.dev-body{display:none;padding:0 13px 12px}
+.dev-section.open .dev-body{display:block}
+.dev-note{font-size:.68rem;color:var(--tx2);line-height:1.6;padding:7px 10px;background:var(--bg);border-radius:4px;border-left:3px solid var(--orange);margin-bottom:9px}
+.exp-detail{background:var(--bg);border-radius:var(--r);border:1px solid var(--border);padding:14px;margin-bottom:12px}
+.exp-detail h4{font-size:.8rem;font-weight:600;margin-bottom:6px}.exp-detail p{font-size:.71rem;color:var(--tx2);line-height:1.6;margin-bottom:10px}
+.exp-stat{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.exp-stat-item{padding:7px 12px;border-radius:var(--r);font-size:.7rem;font-weight:600;border:1px solid var(--border)}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:100;display:none;align-items:center;justify-content:center;padding:16px}
+.modal-bg.open{display:flex}.modal{background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);max-width:680px;width:100%;max-height:82vh;display:flex;flex-direction:column}
+.modal-head{padding:13px 17px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.modal-head h3{font-size:.87rem;font-weight:600}.modal-close{background:none;border:none;color:var(--tx2);cursor:pointer;font-size:1.1rem;padding:3px}
+.modal-close:hover{color:var(--tx)}.modal-body{overflow-y:auto;padding:13px}
+.modal-note{font-size:.69rem;color:var(--tx3);padding:7px 11px;background:var(--bg);border-radius:4px;border-left:3px solid var(--accent);margin-bottom:11px;line-height:1.6}
+.toast{position:fixed;bottom:17px;right:17px;padding:10px 17px;border-radius:var(--r);font-size:.75rem;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all .26s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast.show{transform:translateY(0);opacity:1}.toast.ok{background:var(--green);color:#fff}
+.toast.err{background:var(--red);color:#fff}.toast.warn{background:var(--yellow);color:#000}.toast.info{background:var(--accent);color:#fff}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:var(--bg)}::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<div class="hdr">
+  <div class="hdr-brand"><h1>CPM <em>&#8594;</em> P6</h1><div class="sub">Cosedil PMO &nbsp;|&nbsp; Budget CPM vs SIL vs P6 &nbsp;|&nbsp; CSV + XER nativo, offline</div></div>
+  <div class="hdr-meta">
+    <div class="meta-item"><div class="ml">Commessa</div><div class="mv" id="mComm">&mdash;</div></div>
+    <div class="meta-item"><div class="ml">Ultimo SIL</div><div class="mv" id="mSil">&mdash;</div></div>
+    <button class="btn-export-top" id="btnExpTop" onclick="doExport()">&#128228; Esporta CSV per P6</button>
+  </div>
+</div>
+<div class="pills">
+  <div class="pill info" id="pDocs"><div class="pi">&#128203;</div><div><div class="pl">Caricati</div><div class="pv" id="pDocsV">0 / 3</div></div></div>
+  <div class="pill" id="pBudget"><div class="pi">&#128176;</div><div><div class="pl">Budget CPM</div><div class="pv" id="pBudgetV">&mdash;</div></div></div>
+  <div class="pill" id="pSil"><div class="pi">&#128202;</div><div><div class="pl">SIL Diretti</div><div class="pv" id="pSilV">&mdash;</div></div></div>
+  <div class="pill" id="pP6"><div class="pi">&#128197;</div><div><div class="pl">Griglia P6</div><div class="pv" id="pP6V">&mdash;</div></div></div>
+  <div class="pill" id="pCpi"><div class="pi">&#128200;</div><div><div class="pl">CPI</div><div class="pv" id="pCpiV">&mdash;</div></div></div>
+</div>
+<div class="flow">
+  <div class="fstep" id="f1"><div class="fdot">1</div><div class="flbl">Budget</div></div>
+  <div class="fstep" id="f2"><div class="fdot">2</div><div class="flbl">SIL</div></div>
+  <div class="fstep" id="f3"><div class="fdot">3</div><div class="flbl">XER P6</div></div>
+  <div class="fstep" id="f4"><div class="fdot">&#9702;</div><div class="flbl">Bridge</div></div>
+  <div class="fstep" id="f5"><div class="fdot">&#9656;</div><div class="flbl">Alert</div></div>
+  <div class="fstep" id="f6"><div class="fdot">&#9656;</div><div class="flbl">Deviazioni</div></div>
+  <div class="fstep out" id="f7"><div class="fdot">&#8594;</div><div class="flbl">Export P6</div></div>
+</div>
+<div class="bnr warn" id="bnrNoP6">&#9888; <div><strong>XER P6 non caricato</strong> &mdash; Distribuzione con fallback durata (DUR).</div></div>
+<div class="bnr err" id="bnrUnmapped">&#128308; <div id="bnrUnmTxt">WBS CPM senza corrispondenza P6.</div></div>
+<div class="bnr ok" id="bnrOk">&#10003; <strong>Bridge completo</strong> &mdash; Deviazioni recepite. Controlla Alert e Deviazioni prima di esportare.</div>
+<div class="layout">
+  <div class="inp">
+    <div class="inp-label">Dati CPM</div>
+    <div class="dz" id="dz-budget" data-key="budget">
+      <span class="dz-badge b-ess">ESSENZIALE</span>
+      <div class="dz-ico">&#128176;</div>
+      <div class="dz-body"><div class="dz-title">Budget CPM</div><div class="dz-desc">Articoli di computo &mdash; .csv</div><div class="dz-info" id="fi-budget"></div></div>
+      <input type="file" accept=".csv,.txt" id="f-budget">
+    </div>
+    <div class="dz" id="dz-sil" data-key="sil">
+      <span class="dz-badge b-ess">ESSENZIALE</span>
+      <div class="dz-ico">&#128202;</div>
+      <div class="dz-body"><div class="dz-title">SIL Diretti</div><div class="dz-desc">Produzione del periodo &mdash; .csv</div><div class="dz-info" id="fi-sil"></div></div>
+      <input type="file" accept=".csv,.txt" id="f-sil">
+    </div>
+    <div class="inp-label">Dati P6</div>
+    <div class="dz" id="dz-p6" data-key="p6">
+      <span class="dz-badge b-p6">P6 XER</span>
+      <div class="dz-ico">&#128197;</div>
+      <div class="dz-body"><div class="dz-title">Export P6</div><div class="dz-desc">File XER nativo <strong>.xer</strong> oppure .csv</div><div class="dz-info" id="fi-p6"></div></div>
+      <input type="file" accept=".xer,.csv,.txt" id="f-p6">
+    </div>
+    <a class="map-link" id="mapLink" onclick="openModal()">&#128279; Vedi mapping WBS &#8596; Activity ID</a>
+    <hr class="sep">
+    <div class="btn-row">
+      <button class="btn btn-primary" id="btnCalc" disabled onclick="runBridge()">&#8635; Calcola Bridge</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">&#10005; Reset</button>
+    </div>
+    <hr class="sep">
+    <div style="font-size:.6rem;color:var(--tx3);line-height:1.65">
+      <strong style="color:var(--tx2)">Input P6 accettati:</strong><br>
+      <strong style="color:var(--orange)">XER</strong>: file nativo Primavera<br>
+      <strong style="color:var(--a2)">CSV</strong>: Excel &rarr; Salva con nome &rarr; CSV UTF-8
+    </div>
+  </div>
+  <div class="out">
+    <div class="card" id="cardEmpty">
+      <div class="card-body empty">
+        <div class="e-ico">&#128202;</div><div class="e-title">Pronto per l'analisi</div>
+        <div class="e-desc">Carica <strong>Budget CPM</strong> + <strong>SIL Diretti</strong> per iniziare.<br>Con l'<strong>Export P6</strong> si abilitano distribuzione % fisica, Alert e Deviazioni.<br><br><span style="color:var(--tx3)">Mapping WBS &#8596; Activity ID calcolato automaticamente.</span></div>
+      </div>
+    </div>
+    <div id="resArea" style="display:none">
+      <div class="card">
+        <div class="card-head"><h3>&#128200; KPI Commessa</h3><div class="ch-right"><span class="ch-badge" id="kpiMet" style="background:rgba(59,130,246,.15);color:var(--a2)">PHY</span><span class="ch-badge" id="kpiDevBadge" style="display:none;background:rgba(249,115,22,.15);color:var(--orange)"></span></div></div>
+        <div class="card-body">
+          <div class="kgrid">
+            <div class="kpi"><div class="kv" id="kRicavi">&mdash;</div><div class="kl">Ricavi SIL</div></div>
+            <div class="kpi"><div class="kv" id="kBudget">&mdash;</div><div class="kl">Budget Costo</div></div>
+            <div class="kpi"><div class="kv" id="kDistrib">&mdash;</div><div class="kl">Distrib. P6</div></div>
+            <div class="kpi" id="kpiMarg"><div class="kv" id="kMarg">&mdash;</div><div class="kl">Margine %</div></div>
+            <div class="kpi" id="kpiCpi"><div class="kv" id="kCpi">&mdash;</div><div class="kl">CPI</div></div>
+            <div class="kpi"><div class="kv" id="kNSil">&mdash;</div><div class="kl">N&deg; SIL</div></div>
+            <div class="kpi"><div class="kv" id="kNAct">&mdash;</div><div class="kl">Attivita P6</div></div>
+            <div class="kpi" id="kpiUnmapped"><div class="kv" id="kUnmapped">&mdash;</div><div class="kl">WBS non mapp.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="card">
+        <div class="tabs">
+          <div class="tab active" data-t="riep">Riepilogo WBS</div>
+          <div class="tab" data-t="sil">Ricavi SIL</div>
+          <div class="tab" data-t="costi">Budget CPM</div>
+          <div class="tab" data-t="bridge">Distrib. P6</div>
+          <div class="tab" data-t="alert" id="tabAlert">&#9888; Alert</div>
+          <div class="tab" data-t="dev" id="tabDev">&#128260; Deviazioni</div>
+          <div class="tab" data-t="export" id="tabExport">&#128228; Export P6</div>
+        </div>
+        <div class="tc active" id="tc-riep">
+          <div class="card-scroll"><table><thead><tr><th>Cod. WBS</th><th>Descrizione</th><th class="num">SIL ricavi</th><th class="num">Budget costo</th><th class="num">Distrib. P6</th><th class="num">Delta</th><th>Att.</th><th>Check</th></tr></thead><tbody id="tbRiep"></tbody></table></div>
+          <div class="legend"><div class="leg"><div class="ldot" style="background:var(--green)"></div>OK</div><div class="leg"><div class="ldot" style="background:var(--yellow)"></div>Delta residuo</div><div class="leg"><div class="ldot" style="background:var(--red)"></div>WBS non mappata</div></div>
+        </div>
+        <div class="tc" id="tc-sil">
+          <div class="card-scroll"><table><thead><tr><th>SIL #</th><th class="num">Righe</th><th class="num">Periodo</th><th class="num">Cumulativo</th><th class="num">% tot.</th></tr></thead><tbody id="tbSil"></tbody></table></div>
+        </div>
+        <div class="tc" id="tc-costi">
+          <div class="card-scroll"><table><thead><tr><th>Cod. WBS</th><th>Descrizione</th><th class="num">Budget costo</th><th class="num">Budget offerta</th><th class="num">Marg. prev.</th><th class="num">SIL consunt.</th><th class="num">Scost. vs bud.</th></tr></thead><tbody id="tbCosti"></tbody></table></div>
+        </div>
+        <div class="tc" id="tc-bridge">
+          <div class="card-scroll"><table><thead><tr><th>Activity ID</th><th>WBS CPM</th><th class="num">% Fisica</th><th>Metodo</th><th class="num">Periodo</th><th class="num">Totale</th></tr></thead><tbody id="tbBridge"></tbody></table></div>
+          <div class="legend"><div class="leg"><div class="ldot" style="background:var(--green)"></div>PHY</div><div class="leg"><div class="ldot" style="background:var(--yellow)"></div>DUR</div><div class="leg"><div class="ldot" style="background:var(--tx3)"></div>ZERO</div></div>
+        </div>
+        <div class="tc" id="tc-alert">
+          <div id="alertList" class="card-scroll"></div>
+          <div id="noAlert" style="display:none"><div class="card-body empty" style="padding:26px 20px"><div class="e-ico" style="font-size:1.8rem">&#10003;</div><div class="e-title" style="color:var(--green)">Nessun alert</div><div class="e-desc">Tutte le attivita hanno coerenza costi / % fisica.</div></div></div>
+        </div>
+        <div class="tc" id="tc-dev">
+          <div style="padding:10px 13px;border-bottom:1px solid var(--border);background:rgba(249,115,22,.05)">
+            <p style="font-size:.71rem;line-height:1.6;color:var(--tx2)"><strong style="color:var(--orange)">&#128260; Storia della commessa</strong> &mdash; Confronto articolo per articolo tra Budget CPM e SIL consuntivati. Gli scostamenti vengono <strong style="color:var(--green)">recepiti automaticamente nell'export P6</strong>. La baseline rimane invariata.</p>
+          </div>
+          <div id="devList" class="card-scroll"></div>
+          <div id="noDev" style="display:none"><div class="card-body empty" style="padding:26px 20px"><div class="e-ico" style="font-size:1.8rem">&#128203;</div><div class="e-title">Nessuna deviazione rilevata</div><div class="e-desc">Caricare Budget CPM + SIL per il confronto articoli.</div></div></div>
+          <div class="legend"><div class="leg"><div class="ldot" style="background:var(--purple)"></div>Voce nuova</div><div class="leg"><div class="ldot" style="background:var(--red)"></div>Non usata</div><div class="leg"><div class="ldot" style="background:var(--orange)"></div>Sforamento</div><div class="leg"><div class="ldot" style="background:var(--a2)"></div>Risparmio</div><div class="leg"><div class="ldot" style="background:var(--yellow)"></div>Scost. lieve</div></div>
+        </div>
+        <div class="tc" id="tc-export">
+          <div class="card-body">
+            <div class="exp-detail">
+              <h4>&#128228; Export CSV per Primavera P6</h4>
+              <p>Costi effettivi aggiornati per ogni Activity ID. Scostamenti CPM integrati automaticamente. Importa su <code>Actual Cost This Period</code> e <code>Actual Total Cost</code>. <strong>La baseline rimane invariata.</strong></p>
+              <div class="exp-stat" id="expStats"></div>
+              <div class="btn-row"><button class="btn btn-green" onclick="doExport()">&#128229; Scarica CSV per P6</button><button class="btn btn-ghost btn-sm" onclick="doExportTSV()">&#128203; Copia (Tab)</button></div>
+            </div>
+            <div style="font-size:.72rem;color:var(--tx2);margin-bottom:7px;font-weight:600">Anteprima (prime 30 righe):</div>
+            <div class="card-scroll" style="max-height:280px"><table><thead><tr><th>Activity ID</th><th>Activity Name</th><th class="num">This Period</th><th class="num">Total Cost</th><th class="num">Delta vs P6</th><th>Note CPM</th></tr></thead><tbody id="tbExport"></tbody></table></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+<div class="modal-bg" id="modalBg" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <div class="modal-head"><h3>&#128279; Mapping WBS &#8596; Activity ID (automatico)</h3><button class="modal-close" onclick="closeModal()">&#10005;</button></div>
+    <div class="modal-body">
+      <div class="modal-note">Corrispondenze dedotte dai codici WBS di CPM vs campo <code>wbs_id</code> dell'XER P6. Nessun file di mapping necessario.</div>
+      <table><thead><tr><th>WBS CPM</th><th>Descrizione</th><th>Activity ID P6</th><th>Activity Name</th><th class="num">% Fisica</th></tr></thead><tbody id="tbMap"></tbody></table>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<script>
+const S={budget:null,sil:null,p6:null,results:null,exportRows:null};
+
+function parseCSV(text){
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  if(lines.length<2)return[];
+  let richLine=lines[0];
+  for(const l of lines){if(l.length>richLine.length)richLine=l;}
+  const nc=(richLine.match(/,/g)||[]).length,ns=(richLine.match(/;/g)||[]).length;
+  const sep=ns>nc?';':',';
+  function pl(line){
+    const c=[];let cur='',q=false;
+    for(let i=0;i<line.length;i++){const ch=line[i];if(ch==='"'){q=!q;}else if(ch===sep&&!q){c.push(cur.trim());cur='';}else cur+=ch;}
+    c.push(cur.trim());return c;
+  }
+  const HEADER_SIGNALS=['task_code','wbs_id','cod. wbs','cod.wbs','cod. sil','importo','wbs_code'];
+  let headerIdx=0;
+  for(let i=0;i<Math.min(12,lines.length);i++){
+    if(!lines[i].trim())continue;
+    if(HEADER_SIGNALS.some(s=>lines[i].toLowerCase().includes(s))){headerIdx=i;break;}
+  }
+  const headers=pl(lines[headerIdx]).map(h=>h.replace(/^"|"$/g,'').trim());
+  const SKIP=[/^activity\s*(id|code|status)?$/i,/^wbs\s*(code|id)?$/i,/^stato\s/i,/^codice\s/i,/^descrizione\s*/i,/^actual\s+(this|total|start|finish)/i,/^physical\s*%/i,/^delete\s+this/i,/^\(\*\)/];
+  function isLabel(line){const v=pl(line).map(v=>v.replace(/^"|"$/g,'').trim()).filter(v=>v);return v.length&&SKIP.some(p=>p.test(v[0]));}
+  let ds=headerIdx+1;
+  while(ds<lines.length){if(!lines[ds].trim()){ds++;continue;}if(isLabel(lines[ds])){ds++;continue;}break;}
+  const rows=[];
+  for(let i=ds;i<lines.length;i++){
+    if(!lines[i].trim())continue;
+    const v=pl(lines[i]);const fv=(v[0]||'').replace(/^"|"$/g,'').trim();
+    if(!fv||isLabel(lines[i]))continue;
+    const o={};headers.forEach((h,j)=>o[h]=(v[j]||'').replace(/^"|"$/g,'').trim());rows.push(o);
+  }
+  return rows;
+}
+
+function fc(row,names){for(const n of names)for(const k of Object.keys(row))if(k.toLowerCase().includes(n.toLowerCase()))return row[k];return null;}
+function pn(v){if(!v&&v!==0)return 0;if(typeof v==='number')return v;return parseFloat(String(v).replace(/[^\d.,-]/g,'').replace(',','.'))||0;}
+
+function parseXER(text){
+  const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n');
+  const tables={};let curTable=null,curFields=[];
+  for(const line of lines){
+    if(line.startsWith('%T,')||line.startsWith('%T\t')){curTable=line.substring(3).trim();tables[curTable]={fields:[],rows:[]};curFields=[];}
+    else if((line.startsWith('%F,')||line.startsWith('%F\t'))&&curTable){curFields=line.substring(2).trim().split(/[\t,]/);tables[curTable].fields=curFields;}
+    else if((line.startsWith('%R,')||line.startsWith('%R\t'))&&curTable){
+      const raw=line.substring(2).trim();const sep=raw.includes('\t')?'\t':',';
+      const vals=raw.split(sep);const obj={};curFields.forEach((f,i)=>obj[f.trim()]=(vals[i]||'').trim());tables[curTable].rows.push(obj);
+    }
+  }
+  const wbsMap={},wbsNameMap={};
+  const wbsData=tables['PROJWBS']||tables['projwbs'];
+  if(wbsData)wbsData.rows.forEach(w=>{wbsMap[w.wbs_id]=w.wbs_short_name||w.wbs_id;wbsNameMap[w.wbs_id]=w.wbs_name||'';});
+  const taskData=tables['TASK']||tables['task'];
+  if(!taskData||!taskData.rows.length){console.warn('XER: no TASK. Tables:',Object.keys(tables));return[];}
+  return taskData.rows.map(t=>{
+    const actId=String(t.task_code||'').trim();if(!actId)return null;
+    return{activityId:actId,actName:String(t.task_name||'').trim(),statusCode:String(t.status_code||'').trim(),
+      wbsCode:wbsMap[t.wbs_id]||t.wbs_id||'',wbsName:wbsNameMap[t.wbs_id]||'',
+      physPct:parseFloat(t.phys_complete_pct)||0,actCost:parseFloat(t.act_this_per_work_qty)||0,origDur:parseFloat(t.target_drtn_hr_cnt)||1};
+  }).filter(Boolean);
+}
+
+function idBudget(rows){return rows.map(r=>({codWBS:String(fc(r,['Cod. WBS','Cod.WBS','CodWBS','WBS Code','WBS'])||'').trim(),desWBS:String(fc(r,['Des. WBS','Des.WBS','WBS Name'])||'').trim(),articolo:String(fc(r,['Articolo','Desc.','Descrizione','Voce','Cod. Articolo'])||'').trim(),um:String(fc(r,['U.M.','UM','Unita','UdM','Misura'])||'').trim(),qta:pn(fc(r,['Quantita','Qta','Q.ta','Q.','Quantity','Qty'])),costo:pn(fc(r,['Importo Costo','Costo','Imp. Costo','ImpCosto'])),offerta:pn(fc(r,['Importo Offerta','Offerta','Imp. Offerta','ImpOfferta','Ricavo']))})).filter(r=>r.codWBS);}
+function idSIL(rows){return rows.map(r=>({silNum:parseInt(fc(r,['Cod. S.I.L.','Cod. SIL','Cod.SIL','N. SIL','SIL','Prg','N.SIL','Progressivo'])||'0')||0,codWBS:String(fc(r,['Cod. WBS','Cod.WBS','CodWBS','WBS'])||'').trim(),desWBS:String(fc(r,['Des. WBS','Des.WBS'])||'').trim(),articolo:String(fc(r,['Articolo','Desc.','Descrizione','Voce'])||'').trim(),um:String(fc(r,['U.M.','UM','UdM'])||'').trim(),qta:pn(fc(r,['Quantita','Qta','Q.ta','Q.','Quantity'])),importo:pn(fc(r,['Importo']))})).filter(r=>r.silNum>0&&r.codWBS);}
+function idP6(rows){return rows.map(r=>({activityId:String(fc(r,['task_code','Activity ID','ActivityID','Activity_ID'])||'').trim(),actName:String(fc(r,['task_name','Activity Name','ActivityName','Name'])||'').trim(),statusCode:String(fc(r,['status_code','Activity Status'])||'').trim(),wbsCode:String(fc(r,['wbs_id','WBS Code','WBS'])||'').trim(),physPct:pn(fc(r,['calc_phys_complete_pct','Physical % Complete','Physical_Pct','PhysPct'])),actCost:pn(fc(r,['act_cost','Actual Total Cost','ActualCost'])),origDur:pn(fc(r,['target_drtn_hr_cnt','Original Duration','OriginalDuration','BL Duration']))})).filter(r=>r.activityId);}
+
+function readFile(file){
+  return new Promise((res,rej)=>{
+    if(!file.name.match(/\.(csv|txt|xer)$/i)){rej('Formati: .xer (Primavera nativo) o .csv (Excel)');return;}
+    const r=new FileReader();r.onload=e=>res(e.target.result);r.onerror=()=>rej('Errore lettura');r.readAsText(file,'UTF-8');
+  });
+}
+
+document.querySelectorAll('.dz').forEach(dz=>{
+  const key=dz.dataset.key,inp=dz.querySelector('input[type=file]');
+  dz.addEventListener('click',()=>inp.click());
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files[0])loadF(key,e.dataTransfer.files[0]);});
+  inp.addEventListener('change',e=>{if(e.target.files[0])loadF(key,e.target.files[0]);});
+});
+
+async function loadF(key,file){
+  try{
+    toast('Caricamento '+file.name+'...','info');
+    const text=await readFile(file);
+    let parsed;
+    if(key==='p6'&&file.name.match(/\.xer$/i)){
+      parsed=parseXER(text);
+      if(!parsed||!parsed.length){toast('Nessuna attivita nel file XER.','err');return;}
+    } else {
+      const rows=parseCSV(text);
+      if(!rows.length){toast('File vuoto o intestazioni non trovate','err');return;}
+      switch(key){case 'budget':parsed=idBudget(rows);break;case 'sil':parsed=idSIL(rows);break;case 'p6':parsed=idP6(rows);break;}
+      if(!parsed||!parsed.length){toast('Colonne non riconosciute in '+file.name,'err');return;}
+    }
+    S[key]=parsed;
+    document.getElementById('dz-'+key).classList.add('loaded');
+    document.getElementById('fi-'+key).textContent=file.name+' — '+parsed.length+' righe';
+    updateUI();toast(key.toUpperCase()+' caricato: '+parsed.length+' righe','ok');
+  }catch(e){toast(String(e.message||e),'err');}
+}
+
+document.querySelectorAll('.tab').forEach(t=>{t.addEventListener('click',()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.remove('active'));document.querySelectorAll('.tc').forEach(x=>x.classList.remove('active'));t.classList.add('active');document.getElementById('tc-'+t.dataset.t).classList.add('active');});});
+
+function setStep(id,cls){const e=document.getElementById(id);e.className='fstep'+(cls?' '+cls:'');}
+function setPill(id,cls){const e=document.getElementById(id);e.className='pill'+(cls?' '+cls:'');}
+
+function updateUI(){
+  const cnt=[S.budget,S.sil,S.p6].filter(Boolean).length;
+  document.getElementById('pDocsV').textContent=cnt+' / 3';
+  setPill('pDocs',cnt>=3?'ok':cnt>=1?'warn':'info');
+  setPill('pBudget',S.budget?'ok':'');document.getElementById('pBudgetV').textContent=S.budget?S.budget.length+' art.':'—';
+  setPill('pSil',S.sil?'ok':'');document.getElementById('pSilV').textContent=S.sil?([...new Set(S.sil.map(r=>r.silNum))].length)+' SIL':'—';
+  setPill('pP6',S.p6?'ok':'warn');document.getElementById('pP6V').textContent=S.p6?S.p6.length+' att.':'non caricato';
+  setStep('f1',S.budget?'done':'');setStep('f2',S.sil?'done':'');setStep('f3',S.p6?'done':S.sil?'warn':'');
+  document.getElementById('btnCalc').disabled=!(S.budget&&S.sil);
+  document.getElementById('mapLink').className='map-link'+(S.results?' ready':'');
+  if(S.budget){const l=fc(S.budget[0],['Cod. Lotto','CodLotto','Lotto'])||'—';document.getElementById('mComm').textContent=l;}
+  if(S.sil){const ns=[...new Set(S.sil.map(r=>r.silNum))].sort((a,b)=>a-b);document.getElementById('mSil').textContent='SIL '+ns[ns.length-1];}
+}
+
+function runBridge(){
+  if(!S.budget||!S.sil){toast('Servono Budget CPM + SIL Diretti','err');return;}
+  const hasP6=!!S.p6;
+  const wbsToActs={},actMap={};
+  if(hasP6){S.p6.forEach(a=>{actMap[a.activityId]=a;if(!wbsToActs[a.wbsCode])wbsToActs[a.wbsCode]=[];if(!wbsToActs[a.wbsCode].includes(a.activityId))wbsToActs[a.wbsCode].push(a.activityId);});}
+  const budByWBS={};
+  S.budget.forEach(r=>{
+    if(!budByWBS[r.codWBS])budByWBS[r.codWBS]={costo:0,offerta:0,des:r.desWBS,arts:{}};
+    budByWBS[r.codWBS].costo+=r.costo;budByWBS[r.codWBS].offerta+=r.offerta;
+    if(r.articolo){const k=r.articolo;if(!budByWBS[r.codWBS].arts[k])budByWBS[r.codWBS].arts[k]={qta:0,costo:0,um:r.um};budByWBS[r.codWBS].arts[k].qta+=r.qta;budByWBS[r.codWBS].arts[k].costo+=r.costo;}
+  });
+  const silNums=[...new Set(S.sil.map(r=>r.silNum))].sort((a,b)=>a-b);
+  const allWBS=[...new Set(S.sil.map(r=>r.codWBS))];
+  const silByWBS={},silByNum={},silByWBSArt={},wbsDesMap={};
+  S.sil.forEach(r=>{
+    if(!silByWBS[r.codWBS])silByWBS[r.codWBS]={total:0,bySIL:{},des:r.desWBS};
+    silByWBS[r.codWBS].total+=r.importo;silByWBS[r.codWBS].bySIL[r.silNum]=(silByWBS[r.codWBS].bySIL[r.silNum]||0)+r.importo;
+    if(!silByNum[r.silNum])silByNum[r.silNum]={rows:0,total:0};silByNum[r.silNum].rows++;silByNum[r.silNum].total+=r.importo;
+    if(r.desWBS)wbsDesMap[r.codWBS]=r.desWBS;
+    if(r.articolo){if(!silByWBSArt[r.codWBS])silByWBSArt[r.codWBS]={};const k=r.articolo;if(!silByWBSArt[r.codWBS][k])silByWBSArt[r.codWBS][k]={qta:0,importo:0,um:r.um};silByWBSArt[r.codWBS][k].qta+=r.qta;silByWBSArt[r.codWBS][k].importo+=r.importo;}
+  });
+  S.budget.forEach(r=>{if(r.desWBS)wbsDesMap[r.codWBS]=r.desWBS;});
+  const deviazioni=[],wbsCostDelta={};
+  const allWBSDev=[...new Set([...Object.keys(budByWBS),...Object.keys(silByWBSArt)])];
+  allWBSDev.forEach(wbs=>{
+    const budArts=budByWBS[wbs]?.arts||{},silArts=silByWBSArt[wbs]||{};
+    const allArts=[...new Set([...Object.keys(budArts),...Object.keys(silArts)])];
+    const wbsDevs=[];
+    allArts.forEach(art=>{
+      const b=budArts[art],s=silArts[art];
+      const qtaBud=b?b.qta:0,qtaSil=s?s.qta:0,costoBud=b?b.costo:0,costoSil=s?s.importo:0,um=b?b.um:(s?s.um:'');
+      const deltaImporto=costoSil-costoBud,deltaPct=costoBud!==0?(deltaImporto/Math.abs(costoBud)*100):(costoSil!==0?100:0);
+      let tipo='';if(!b&&s)tipo='NEW';else if(b&&!s)tipo='MISS';else if(Math.abs(deltaImporto)>0.5)tipo=deltaImporto>0?'OVER':'UNDER';
+      if(tipo)wbsDevs.push({art,um,qtaBud,qtaSil,costoBud,costoSil,deltaImporto,deltaPct,tipo,label:tipo==='NEW'?'Voce nuova':tipo==='MISS'?'Non usata':tipo==='OVER'?'Sforamento':'Risparmio'});
+    });
+    if(wbsDevs.length>0){
+      const totDelta=wbsDevs.reduce((s,d)=>s+d.deltaImporto,0);wbsCostDelta[wbs]=totDelta;
+      deviazioni.push({wbs,desWBS:budByWBS[wbs]?.des||wbsDesMap[wbs]||wbs,devs:wbsDevs.sort((a,b2)=>Math.abs(b2.deltaImporto)-Math.abs(a.deltaImporto)),totDelta,nNew:wbsDevs.filter(d=>d.tipo==='NEW').length,nMiss:wbsDevs.filter(d=>d.tipo==='MISS').length,nOver:wbsDevs.filter(d=>d.tipo==='OVER').length,nUnder:wbsDevs.filter(d=>d.tipo==='UNDER').length});
+    }
+  });
+  deviazioni.sort((a,b2)=>Math.abs(b2.totDelta)-Math.abs(a.totDelta));
+  const bridgeRows=[],alertRows=[],unmapped=[],actTotals={};
+  const lastSIL=silNums[silNums.length-1];
+  allWBS.forEach(wbs=>{
+    const sd=silByWBS[wbs];if(!sd)return;
+    const acts=(wbsToActs[wbs]||[]).slice();
+    if(acts.length===0){unmapped.push({codWBS:wbs,desWBS:sd.des||wbsDesMap[wbs]||wbs,importo:sd.total});return;}
+    let totPhy=0;const weights=acts.map(id=>{const a=actMap[id],phy=a?a.physPct:0;totPhy+=phy;return{id,phy,dur:a?(a.origDur||1):1};});
+    const totDur=weights.reduce((s,w)=>s+w.dur,0)||weights.length;
+    weights.forEach(w=>{
+      let weight,method;if(totPhy>0){weight=w.phy/totPhy;method=w.phy>0?'PHY':'ZERO';}else{weight=w.dur/totDur;method='DUR';}
+      const cTot=sd.total*weight,cPer=(sd.bySIL[lastSIL]||0)*weight;
+      const p6ActCost=actMap[w.id]?actMap[w.id].actCost:0;
+      if(!actTotals[w.id])actTotals[w.id]={thisPer:0,total:0,wbs,method};
+      actTotals[w.id].thisPer+=cPer;actTotals[w.id].total+=cTot;actTotals[w.id].deltaVsP6=cTot-p6ActCost;
+      bridgeRows.push({id:w.id,wbs,phy:w.phy,method,cPer,cTot});
+      if(cTot>0&&w.phy===0&&method==='DUR')alertRows.push({id:w.id,wbs,cost:cTot,phy:0,sev:hasP6?'med':'low',note:hasP6?'% fisica = 0, usa fallback durata':'P6 non caricato, fallback su durata'});
+    });
+  });
+  if(hasP6){
+    S.p6.forEach(a=>{
+      if(a.actCost>0&&a.physPct===0&&!alertRows.find(ar=>ar.id===a.activityId&&ar.note.includes('fallback')))
+        alertRows.push({id:a.activityId,wbs:a.wbsCode,cost:a.actCost,phy:0,sev:'med',note:'Costo registrato in P6 ma % fisica = 0 \u2014 verificare avanzamento con planner'});
+      if(a.actCost>0&&!allWBS.includes(a.wbsCode)&&!alertRows.find(ar=>ar.id===a.activityId))
+        alertRows.push({id:a.activityId,wbs:a.wbsCode,cost:a.actCost,phy:a.physPct,sev:'high',note:'Costo P6 su WBS non presente nei SIL CPM \u2014 WBS non mappata'});
+    });
+  }
+  const totalRicavi=Object.values(silByWBS).reduce((s,v)=>s+v.total,0);
+  const totalBudget=Object.values(budByWBS).reduce((s,v)=>s+v.costo,0);
+  const riepilogo=allWBS.map(wbs=>{
+    const sd=silByWBS[wbs];if(!sd)return null;const bd=budByWBS[wbs]||{costo:0,offerta:0};
+    let tp6=0;(wbsToActs[wbs]||[]).forEach(id=>{if(actTotals[id])tp6+=actTotals[id].total;});
+    const delta=sd.total-tp6,mapped=!!(wbsToActs[wbs]||[]).length;
+    return{codWBS:wbs,desWBS:sd.des||wbsDesMap[wbs]||wbs,totalSIL:sd.total,budgetCosto:bd.costo,totalP6:tp6,delta,nActs:(wbsToActs[wbs]||[]).length,check:!mapped?'NON MAPPATA':Math.abs(delta)<1?'OK':'DELTA'};
+  }).filter(Boolean);
+  let cum=0;const silDetail=silNums.map(n=>{const d=silByNum[n]||{rows:0,total:0};cum+=d.total;return{n,rows:d.rows,per:d.total,cum,pct:totalRicavi>0?d.total/totalRicavi*100:0};});
+  const budRiep=Object.entries(budByWBS).map(([wbs,b])=>({codWBS:wbs,desWBS:b.des||wbs,costo:b.costo,offerta:b.offerta,silTot:(silByWBS[wbs]||{total:0}).total,marg:b.offerta-b.costo})).sort((a,b2)=>b2.costo-a.costo);
+  const exportRows=Object.entries(actTotals).map(([id,v])=>{
+    const a=actMap[id],p6Cost=a?a.actCost:0,delta=v.total-p6Cost;
+    const wbsDev=deviazioni.find(d=>d.wbs===v.wbs);let nota='';
+    if(wbsDev&&Math.abs(wbsDev.totDelta)>0.5){const parts=[];if(wbsDev.nNew>0)parts.push(wbsDev.nNew+' voci nuove');if(wbsDev.nMiss>0)parts.push(wbsDev.nMiss+' voci mancanti');if(wbsDev.nOver>0)parts.push(wbsDev.nOver+' sforamenti');if(wbsDev.nUnder>0)parts.push(wbsDev.nUnder+' risparmi');nota=parts.join(', ')+' (delta '+fe(wbsDev.totDelta)+')';}
+    return{id,name:a?(a.actName||'Activity '+id):'Activity '+id,thisPer:v.thisPer,total:v.total,p6Cost,deltaVsP6:delta,nota,hasDeviation:Math.abs(delta)>0.5};
+  }).sort((a,b2)=>a.id.localeCompare(b2.id));
+  const totalDistrib=Object.values(actTotals).reduce((s,v)=>s+v.total,0);
+  const totalUnmapped=unmapped.reduce((s,v)=>s+v.importo,0);
+  const cpi=totalDistrib>0?totalRicavi/totalDistrib:0;
+  const nDevActs=exportRows.filter(e=>e.hasDeviation).length;
+  S.results={riepilogo,silDetail,budRiep,bridgeRows,alertRows,unmapped,deviazioni,totalRicavi,totalBudget,totalDistrib,totalUnmapped,silNums,hasP6,actTotals,actMap,wbsToActs,wbsDesMap,cpi,nDevActs};
+  S.exportRows=exportRows;
+  render();
+  setStep('f4','done');setStep('f5',alertRows.length>0?'warn':'done');setStep('f6',deviazioni.length>0?'warn':'done');setStep('f7','out');
+  document.getElementById('btnExpTop').className='btn-export-top ready';
+  document.getElementById('mapLink').className='map-link ready';
+  document.querySelectorAll('.bnr').forEach(b=>b.classList.remove('show'));
+  if(!hasP6)document.getElementById('bnrNoP6').classList.add('show');
+  if(totalUnmapped>0){document.getElementById('bnrUnmTxt').innerHTML='<strong>'+unmapped.length+' WBS CPM senza attivita P6</strong> \u2014 Delta: '+fe(totalUnmapped);document.getElementById('bnrUnmapped').classList.add('show');}
+  if(hasP6&&totalUnmapped===0)document.getElementById('bnrOk').classList.add('show');
+  toast('Bridge OK \u2014 '+deviazioni.length+' WBS con deviazioni','ok');
+}
+
+function fn(n,d=2){return n===0?'—':n.toLocaleString('it-IT',{minimumFractionDigits:d,maximumFractionDigits:d});}
+function fe(n){if(n===0)return'—';const s=Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});return(n<0?'-':'')+'€\u202F'+s;}
+function fp(n){return fn(n,1)+'%';}
+
+function render(){
+  const r=S.results;if(!r)return;
+  document.getElementById('cardEmpty').style.display='none';document.getElementById('resArea').style.display='';
+  const marg=r.totalRicavi>0?(r.totalRicavi-r.totalBudget)/r.totalRicavi*100:0;
+  document.getElementById('kRicavi').textContent=fe(r.totalRicavi);document.getElementById('kBudget').textContent=fe(r.totalBudget);
+  document.getElementById('kDistrib').textContent=fe(r.totalDistrib);document.getElementById('kMarg').textContent=fn(marg,1)+'%';
+  document.getElementById('kCpi').textContent=fn(r.cpi,3);document.getElementById('kCpi').style.color=r.cpi>=1?'var(--green)':'var(--red)';
+  document.getElementById('kNSil').textContent=r.silNums.length;document.getElementById('kNAct').textContent=Object.keys(r.actTotals).length;
+  document.getElementById('kUnmapped').textContent=r.unmapped.length||'0';
+  document.getElementById('kpiMarg').className='kpi '+(marg>=0?'ok':'err');document.getElementById('kpiCpi').className='kpi '+(r.cpi>=1?'ok':'err');
+  document.getElementById('kpiUnmapped').className='kpi '+(r.unmapped.length>0?'err':'ok');document.getElementById('kpiMet').textContent=r.hasP6?'PHY':'DUR';
+  const devB=document.getElementById('kpiDevBadge');if(r.nDevActs>0){devB.style.display='';devB.textContent=r.nDevActs+' att. con delta';}else devB.style.display='none';
+  setPill('pCpi',r.cpi>=1?'ok':'err');document.getElementById('pCpiV').textContent=fn(r.cpi,3);
+  let h='',sS=0,sP=0,sB=0;
+  r.riepilogo.forEach(row=>{sS+=row.totalSIL;sP+=row.totalP6;sB+=row.budgetCosto;const c=row.check==='OK'?'tag-ok':row.check==='NON MAPPATA'?'tag-err':'tag-warn';h+=`<tr><td><code style="font-size:.65rem">${row.codWBS}</code></td><td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${row.desWBS}</td><td class="num">${fe(row.totalSIL)}</td><td class="num">${fe(row.budgetCosto)}</td><td class="num">${fe(row.totalP6)}</td><td class="num ${Math.abs(row.delta)>1?'warn-t':''}">${fe(row.delta)}</td><td class="num" style="color:var(--tx2)">${row.nActs||'—'}</td><td><span class="tag ${c}">${row.check}</span></td></tr>`;});
+  r.unmapped.forEach(u=>{sS+=u.importo;h+=`<tr><td><code style="font-size:.65rem">${u.codWBS}</code></td><td style="color:var(--tx2)">${u.desWBS}</td><td class="num">${fe(u.importo)}</td><td class="num">—</td><td class="num">—</td><td class="num err-t">${fe(u.importo)}</td><td>—</td><td><span class="tag tag-err">NON MAPPATA</span></td></tr>`;});
+  h+=`<tr class="r-total"><td colspan="2">TOTALE</td><td class="num">${fe(sS)}</td><td class="num">${fe(sB)}</td><td class="num">${fe(sP)}</td><td class="num">${fe(sS-sP)}</td><td colspan="2"></td></tr>`;
+  document.getElementById('tbRiep').innerHTML=h;
+  h='';r.silDetail.forEach(s=>h+=`<tr><td><strong>SIL ${s.n}</strong></td><td class="num">${s.rows}</td><td class="num">${fe(s.per)}</td><td class="num">${fe(s.cum)}</td><td class="num">${fp(s.pct)}</td></tr>`);
+  h+=`<tr class="r-total"><td colspan="2">TOTALE</td><td class="num">${fe(r.totalRicavi)}</td><td class="num">${fe(r.totalRicavi)}</td><td class="num">100%</td></tr>`;
+  document.getElementById('tbSil').innerHTML=h;
+  h='';let bC=0,bO=0,bS=0;
+  r.budRiep.forEach(b=>{bC+=b.costo;bO+=b.offerta;bS+=b.silTot;const sc=b.silTot-b.costo;h+=`<tr><td><code style="font-size:.65rem">${b.codWBS}</code></td><td>${b.desWBS}</td><td class="num">${fe(b.costo)}</td><td class="num">${fe(b.offerta)}</td><td class="num ${b.marg>=0?'ok-t':'err-t'}">${fe(b.marg)}</td><td class="num">${fe(b.silTot)}</td><td class="num ${sc>0?'ora-t':'ok-t'}">${fe(sc)}</td></tr>`;});
+  h+=`<tr class="r-total"><td colspan="2">TOTALE</td><td class="num">${fe(bC)}</td><td class="num">${fe(bO)}</td><td class="num ${bO-bC>=0?'ok-t':'err-t'}">${fe(bO-bC)}</td><td class="num">${fe(bS)}</td><td class="num ${bS-bC>0?'ora-t':'ok-t'}">${fe(bS-bC)}</td></tr>`;
+  document.getElementById('tbCosti').innerHTML=h;
+  h='';r.bridgeRows.filter(b=>b.cTot>0).sort((a,b2)=>b2.cTot-a.cTot).slice(0,150).forEach(b=>{const mc=b.method==='PHY'?'tag-phy':b.method==='DUR'?'tag-dur':'';h+=`<tr><td><code style="font-size:.65rem">${b.id}</code></td><td>${b.wbs}</td><td class="num">${fn(b.phy,1)}%</td><td><span class="tag ${mc}">${b.method}</span></td><td class="num">${fe(b.cPer)}</td><td class="num">${fe(b.cTot)}</td></tr>`;});
+  document.getElementById('tbBridge').innerHTML=h;
+  const al=document.getElementById('alertList'),na=document.getElementById('noAlert');
+  if(!r.alertRows.length){al.innerHTML='';na.style.display='';}
+  else{na.style.display='none';h='';r.alertRows.forEach(a=>{const si=a.sev==='high'?'&#128308;':a.sev==='med'?'&#9888;&#65039;':'&#8505;&#65039;';const sc=a.sev==='high'?'tag-err':a.sev==='med'?'tag-warn':'tag-phy';h+=`<div style="padding:9px 12px;border-bottom:1px solid rgba(71,85,105,.2);display:flex;gap:10px;align-items:flex-start"><div style="font-size:1rem;margin-top:1px;flex-shrink:0">${si}</div><div><div style="font-size:.76rem;font-weight:600"><code>${a.id}</code></div><div style="font-size:.69rem;color:var(--tx2);margin-top:2px">${a.note}</div><div style="font-size:.63rem;color:var(--tx3);margin-top:3px">WBS: <code>${a.wbs}</code> &nbsp;|&nbsp; Costo: ${fe(a.cost)} &nbsp;|&nbsp; % Fisica: ${fn(a.phy,0)}% &nbsp;|&nbsp; <span class="tag ${sc}">${a.sev.toUpperCase()}</span></div></div></div>`;});al.innerHTML=h;}
+  document.getElementById('tabAlert').innerHTML='&#9888; Alert'+(r.alertRows.length>0?`<span class="tn tn-alert">${r.alertRows.length}</span>`:'');
+  const dl=document.getElementById('devList'),nd=document.getElementById('noDev');
+  if(!r.deviazioni.length){dl.innerHTML='';nd.style.display='';}
+  else{nd.style.display='none';h='';
+    r.deviazioni.forEach((wd,idx)=>{
+      const ico=wd.nNew>0||wd.nMiss>0?'&#128260;':'&#9888;&#65039;';
+      const tags=[];if(wd.nNew>0)tags.push(`<span class="tag tag-new">+${wd.nNew} nuove</span>`);if(wd.nMiss>0)tags.push(`<span class="tag tag-err">-${wd.nMiss} mancanti</span>`);if(wd.nOver>0)tags.push(`<span class="tag tag-ora">${wd.nOver} sfor.</span>`);if(wd.nUnder>0)tags.push(`<span class="tag tag-phy">${wd.nUnder} risp.</span>`);
+      h+=`<div class="dev-section" id="ds${idx}"><div class="dev-head" onclick="toggleDev(${idx})"><div style="font-size:.95rem;flex-shrink:0">${ico}</div><div class="dh-info"><div class="dh-wbs">${wd.wbs} &mdash; ${wd.desWBS}</div><div class="dh-tags">${tags.join('')}</div></div><div class="dh-right"><span style="font-size:.74rem;font-weight:600" class="${wd.totDelta>0?'ora-t':'ok-t'}">${fe(wd.totDelta)}</span><span class="tag" style="background:rgba(34,197,94,.12);color:var(--green);font-size:.57rem">nell'export</span><span class="dev-toggle">&#9656;</span></div></div><div class="dev-body"><div class="dev-note">&#128260; Scostamenti <strong>automaticamente recepiti nell'export P6</strong>. La baseline rimane invariata.</div><table><thead><tr><th>Articolo</th><th>U.M.</th><th class="num">Qta bud.</th><th class="num">Qta SIL</th><th class="num">Costo bud.</th><th class="num">Costo SIL</th><th class="num">Delta</th><th class="num">Scost.%</th><th>Tipo</th></tr></thead><tbody>`;
+      wd.devs.forEach(d=>{const rc=d.tipo==='NEW'?'r-new':d.tipo==='MISS'?'r-miss':d.tipo==='OVER'?'r-over':'r-under';const tc2=d.tipo==='NEW'?'tag-new':d.tipo==='MISS'?'tag-err':d.tipo==='OVER'?'tag-ora':'tag-phy';const pc=Math.abs(d.deltaPct)>20?'err-t':'warn-t';h+=`<tr class="${rc}"><td style="max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${d.art}">${d.art||'—'}</td><td style="color:var(--tx3)">${d.um||'—'}</td><td class="num">${d.qtaBud?fn(d.qtaBud,2):'—'}</td><td class="num">${d.qtaSil?fn(d.qtaSil,2):'—'}</td><td class="num">${fe(d.costoBud)}</td><td class="num">${fe(d.costoSil)}</td><td class="num ${d.deltaImporto>0?'ora-t':'ok-t'}">${fe(d.deltaImporto)}</td><td class="num ${pc}">${fp(d.deltaPct)}</td><td><span class="tag ${tc2}">${d.label}</span></td></tr>`;});
+      h+=`</tbody></table></div></div>`;
+    });dl.innerHTML=h;}
+  const totDev=r.deviazioni.reduce((s,d)=>s+d.devs.length,0);
+  document.getElementById('tabDev').innerHTML='&#128260; Deviazioni'+(totDev>0?`<span class="tn tn-dev">${r.deviazioni.length} WBS</span>`:'');
+  const nWithDev=S.exportRows.filter(e=>e.hasDeviation).length,totExp=S.exportRows.reduce((s,e)=>s+e.total,0);
+  document.getElementById('expStats').innerHTML=`<div class="exp-stat-item" style="background:rgba(34,197,94,.1);border-color:rgba(34,197,94,.3);color:var(--green)">${S.exportRows.length} attivita</div><div class="exp-stat-item" style="background:rgba(249,115,22,.1);border-color:rgba(249,115,22,.3);color:var(--orange)">${nWithDev} att. con delta</div><div class="exp-stat-item" style="background:rgba(59,130,246,.1);border-color:rgba(59,130,246,.3);color:var(--a2)">${fe(totExp)}</div>`;
+  h='';S.exportRows.slice(0,30).forEach(e=>{const dc=e.deltaVsP6>0?'ora-t':e.deltaVsP6<0?'ok-t':'';h+=`<tr class="${e.hasDeviation?'r-over':''}"><td><code style="font-size:.65rem">${e.id}</code></td><td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.name}</td><td class="num">${fe(e.thisPer)}</td><td class="num">${fe(e.total)}</td><td class="num ${dc}">${fe(e.deltaVsP6)}</td><td style="font-size:.63rem;color:var(--tx3);max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${e.nota||''}</td></tr>`;});
+  if(S.exportRows.length>30)h+=`<tr><td colspan="6" style="text-align:center;padding:8px;color:var(--tx3);font-size:.68rem">... e altre ${S.exportRows.length-30} attivita nel CSV</td></tr>`;
+  document.getElementById('tbExport').innerHTML=h;document.getElementById('tabExport').innerHTML='&#128228; Export P6<span class="tn tn-exp">'+S.exportRows.length+'</span>';
+  h='';if(r.hasP6){Object.entries(r.wbsToActs).forEach(([wbs,acts])=>{acts.forEach((id,i)=>{const a=r.actMap[id];h+=`<tr>${i===0?`<td rowspan="${acts.length}"><code style="font-size:.65rem">${wbs}</code></td><td rowspan="${acts.length}" style="color:var(--tx2)">${r.wbsDesMap[wbs]||'—'}</td>`:''}<td><code style="font-size:.65rem">${id}</code></td><td style="color:var(--tx2)">${a?a.actName:'—'}</td><td class="num">${a?fn(a.physPct,1)+'%':'—'}</td></tr>`;});});}
+  else h='<tr><td colspan="5" style="text-align:center;padding:12px;color:var(--tx3)">Caricare Export P6 per vedere il mapping</td></tr>';
+  document.getElementById('tbMap').innerHTML=h;
+}
+
+function toggleDev(idx){document.getElementById('ds'+idx).classList.toggle('open');}
+
+function doExport(){
+  if(!S.exportRows){toast('Eseguire prima il calcolo','warn');return;}
+  let csv='Activity ID,Activity Name,Actual This Period Cost,Actual Total Cost,Delta vs P6,Note CPM\n';
+  S.exportRows.forEach(e=>{const nota=e.nota.replace(/"/g,'""');csv+=`${e.id},"${e.name.replace(/"/g,'""')}",${e.thisPer.toFixed(2)},${e.total.toFixed(2)},${e.deltaVsP6.toFixed(2)},"${nota}"\n`;});
+  const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,\uFEFF'+encodeURIComponent(csv);a.download='P6_IMPORT_'+new Date().toISOString().slice(0,10)+'.csv';a.click();
+  toast('CSV esportato con '+S.exportRows.length+' attivita','ok');
+}
+
+function doExportTSV(){
+  if(!S.exportRows)return;
+  let t='Activity ID\tActivity Name\tActual This Period Cost\tActual Total Cost\tDelta vs P6\tNote CPM\n';
+  S.exportRows.forEach(e=>t+=`${e.id}\t${e.name}\t${e.thisPer.toFixed(2)}\t${e.total.toFixed(2)}\t${e.deltaVsP6.toFixed(2)}\t${e.nota}\n`);
+  navigator.clipboard.writeText(t).then(()=>toast('Copiato negli appunti','ok'));
+}
+
+function openModal(){document.getElementById('modalBg').classList.add('open');}
+function closeModal(){document.getElementById('modalBg').classList.remove('open');}
+
+function resetAll(){
+  Object.keys(S).forEach(k=>S[k]=null);
+  document.querySelectorAll('.dz').forEach(d=>d.classList.remove('loaded','over'));
+  ['fi-budget','fi-sil','fi-p6'].forEach(id=>{const e=document.getElementById(id);if(e)e.textContent='';});
+  document.querySelectorAll('input[type=file]').forEach(f=>f.value='');
+  document.querySelectorAll('.bnr').forEach(b=>b.classList.remove('show'));
+  document.getElementById('cardEmpty').style.display='';document.getElementById('resArea').style.display='none';
+  document.getElementById('btnExpTop').className='btn-export-top';document.getElementById('mapLink').className='map-link';
+  ['f1','f2','f3','f4','f5','f6'].forEach(id=>setStep(id,''));setStep('f7','out');updateUI();toast('Reset completato','warn');
+}
+
+function toast(msg,type){const t=document.getElementById('toast');t.textContent=msg;t.className='toast '+type+' show';setTimeout(()=>t.classList.remove('show'),3400);}
+
+setStep('f7','out');updateUI();
+</script>
+</body>
+</html>
