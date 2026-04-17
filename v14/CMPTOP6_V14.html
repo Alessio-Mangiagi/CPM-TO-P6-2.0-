@@ -1,0 +1,1239 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>CPM → P6 v14.0 | Cosedil PMO</title>
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<style>
+:root{
+  --bg:#0f172a;--bg2:#1e293b;--bg3:#334155;
+  --tx:#e2e8f0;--tx2:#94a3b8;--tx3:#64748b;
+  --accent:#3b82f6;--a2:#60a5fa;
+  --green:#22c55e;--yellow:#eab308;--red:#ef4444;--orange:#f97316;--purple:#a855f7;
+  --border:#475569;--r:8px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;font-size:14px}
+.wrap{max-width:1600px;margin:0 auto;padding:16px}
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 18px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);margin-bottom:10px;gap:10px;flex-wrap:wrap}
+.hdr-brand h1{font-size:1.1rem;font-weight:700}
+.hdr-brand h1 em{color:var(--a2);font-style:normal}
+.hdr-brand .sub{font-size:.64rem;color:var(--tx3);margin-top:1px}
+.hdr-meta{display:flex;align-items:center;gap:12px;flex-shrink:0;flex-wrap:wrap}
+.meta-item .ml{font-size:.55rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.4px}
+.meta-item .mv{font-size:.85rem;font-weight:700;color:var(--a2)}
+.hdr-actions{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.btn-exp-hdr{padding:7px 14px;border:none;border-radius:var(--r);font-size:.72rem;font-weight:700;cursor:pointer;background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.35);transition:all .2s;display:none;align-items:center;gap:5px}
+.btn-exp-hdr:hover{background:rgba(34,197,94,.22)}
+.btn-exp-hdr.show{display:flex}
+.btn-xlsx-hdr{padding:7px 14px;border:none;border-radius:var(--r);font-size:.72rem;font-weight:700;cursor:pointer;background:rgba(34,197,94,.18);color:var(--green);border:1px solid rgba(34,197,94,.45);transition:all .2s;display:none;align-items:center;gap:5px}
+.btn-xlsx-hdr:hover{background:rgba(34,197,94,.3)}
+.btn-xlsx-hdr.show{display:flex}
+.btn-print-hdr{padding:7px 14px;border:none;border-radius:var(--r);font-size:.72rem;font-weight:700;cursor:pointer;background:rgba(59,130,246,.12);color:var(--a2);border:1px solid rgba(59,130,246,.35);transition:all .2s;display:none;align-items:center;gap:5px}
+.btn-print-hdr:hover{background:rgba(59,130,246,.22)}
+.btn-print-hdr.show{display:flex}
+.inp-commessa{padding:5px 9px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--tx);font-size:.78rem;outline:none;width:160px;transition:border-color .2s}
+.inp-commessa:focus{border-color:var(--accent)}
+.inp-commessa::placeholder{color:var(--tx3)}
+.pills{display:flex;gap:7px;margin-bottom:10px;flex-wrap:wrap}
+.pill{display:flex;align-items:center;gap:7px;padding:7px 11px;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);flex:1;min-width:100px}
+.pill .pi{font-size:1rem}
+.pill .pl{font-size:.56rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.4px}
+.pill .pv{font-size:.8rem;font-weight:600;margin-top:1px}
+.pill.ok{border-color:var(--green)}.pill.warn{border-color:var(--yellow)}.pill.err{border-color:var(--red)}.pill.info{border-color:var(--accent)}
+.flow{display:flex;align-items:center;background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);padding:10px 14px;margin-bottom:10px}
+.fstep{flex:1;display:flex;flex-direction:column;align-items:center;position:relative;padding:0 3px}
+.fstep::after{content:'';position:absolute;top:12px;left:calc(50% + 15px);width:calc(100% - 30px);height:2px;background:var(--border);transition:background .3s}
+.fstep:last-child::after{display:none}
+.fstep.done::after{background:var(--green)}
+.fdot{width:26px;height:26px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:.64rem;font-weight:700;border:2px solid var(--border);background:var(--bg);color:var(--tx3);transition:all .3s;margin-bottom:4px}
+.flbl{font-size:.57rem;color:var(--tx3);text-align:center;line-height:1.3}
+.fstep.done .fdot{background:var(--green);border-color:var(--green);color:#fff}.fstep.done .flbl{color:var(--green)}
+.fstep.warn .fdot{background:var(--yellow);border-color:var(--yellow);color:#000}.fstep.warn .flbl{color:var(--yellow)}
+.fstep.out .fdot{background:var(--orange);border-color:var(--orange);color:#fff}.fstep.out .flbl{color:var(--orange)}
+.bnr{padding:8px 12px;border-radius:var(--r);margin-bottom:8px;display:none;align-items:flex-start;gap:8px;font-size:.72rem;line-height:1.5}
+.bnr.show{display:flex}
+.bnr.warn{background:rgba(234,179,8,.07);border:1px solid rgba(234,179,8,.35)}
+.bnr.err{background:rgba(239,68,68,.07);border:1px solid rgba(239,68,68,.35)}
+.bnr.ok{background:rgba(34,197,94,.07);border:1px solid rgba(34,197,94,.35)}
+.layout{display:grid;grid-template-columns:260px 1fr;gap:12px}
+@media(max-width:820px){.layout{grid-template-columns:1fr}}
+.inp{display:flex;flex-direction:column;gap:7px}
+.inp-label{font-size:.58rem;color:var(--tx3);text-transform:uppercase;letter-spacing:.6px;padding:4px 0 2px;border-top:1px solid var(--border);margin-top:3px}
+.inp-label:first-child{border-top:none;margin-top:0}
+.dz{padding:10px 12px;background:var(--bg2);border:2px dashed var(--border);border-radius:var(--r);cursor:pointer;transition:all .2s;position:relative;display:flex;align-items:center;gap:8px}
+.dz:hover,.dz.over{border-color:var(--accent);background:rgba(59,130,246,.04)}
+.dz.loaded{border-color:var(--green);border-style:solid;background:rgba(34,197,94,.04)}
+.dz-ico{font-size:1.2rem;flex-shrink:0}
+.dz-body{flex:1;min-width:0}
+.dz-title{font-size:.73rem;font-weight:600;margin-bottom:1px}
+.dz-desc{font-size:.59rem;color:var(--tx2)}
+.dz-info{font-size:.57rem;color:var(--green);margin-top:2px;display:none;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dz.loaded .dz-info{display:block}
+.dz-badge{position:absolute;top:4px;right:5px;font-size:.52rem;padding:1px 5px;border-radius:3px;font-weight:700}
+.b-ess{background:rgba(239,68,68,.2);color:var(--red)}
+.b-opt{background:rgba(234,179,8,.2);color:var(--yellow)}
+.b-p6{background:rgba(249,115,22,.2);color:var(--orange)}
+input[type=file]{display:none}
+hr.sep{border:none;border-top:1px solid var(--border);margin:5px 0}
+/* Soglia input */
+.soglia-row{display:flex;align-items:center;gap:6px}
+.soglia-row label{font-size:.65rem;color:var(--tx2);white-space:nowrap}
+.inp-soglia{padding:5px 8px;background:var(--bg3);border:1px solid var(--border);border-radius:var(--r);color:var(--tx);font-size:.75rem;outline:none;width:90px;text-align:right;transition:border-color .2s}
+.inp-soglia:focus{border-color:var(--accent)}
+.btn{padding:7px 13px;border:none;border-radius:var(--r);font-size:.72rem;font-weight:600;cursor:pointer;transition:all .2s;display:inline-flex;align-items:center;gap:5px}
+.btn-primary{background:var(--accent);color:#fff}.btn-primary:hover{background:var(--a2)}.btn-primary:disabled{opacity:.35;cursor:not-allowed}
+.btn-ghost{background:var(--bg3);color:var(--tx);border:1px solid var(--border)}.btn-ghost:hover{background:var(--border)}
+.btn-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.3)}.btn-green:hover{background:rgba(34,197,94,.2)}
+.btn-purple{background:rgba(168,85,247,.12);color:var(--purple);border:1px solid rgba(168,85,247,.3)}.btn-purple:hover{background:rgba(168,85,247,.2)}
+.btn-blue{background:rgba(59,130,246,.12);color:var(--a2);border:1px solid rgba(59,130,246,.3)}.btn-blue:hover{background:rgba(59,130,246,.2)}
+.btn-row{display:flex;gap:6px;flex-wrap:wrap}
+.btn-sm{padding:5px 10px;font-size:.68rem}
+.out{display:flex;flex-direction:column;gap:10px}
+.empty{text-align:center;padding:40px 16px;color:var(--tx3)}
+.e-ico{font-size:2rem;margin-bottom:7px}
+.e-title{font-size:.86rem;font-weight:600;margin-bottom:6px}
+.e-desc{font-size:.73rem;line-height:1.7}
+.card{background:var(--bg2);border-radius:var(--r);border:1px solid var(--border);overflow:hidden}
+.card-head{padding:9px 13px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:7px;flex-wrap:wrap}
+.card-head h3{font-size:.8rem;font-weight:600}
+.card-body{padding:12px}
+.card-scroll{max-height:360px;overflow-y:auto}
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(100px,1fr));gap:6px}
+.kpi{padding:8px 10px;background:var(--bg);border-radius:6px;text-align:center;border:1px solid transparent}
+.kpi.ok{border-color:rgba(34,197,94,.22)}.kpi.err{border-color:rgba(239,68,68,.22)}.kpi.warn{border-color:rgba(234,179,8,.22)}.kpi.info{border-color:rgba(59,130,246,.22)}
+.kv{font-size:1.05rem;font-weight:700;margin-bottom:2px}
+.kl{font-size:.55rem;color:var(--tx2);text-transform:uppercase;letter-spacing:.3px}
+.tabs{display:flex;background:var(--bg3);overflow-x:auto;border-bottom:1px solid var(--border)}
+.tab{padding:8px 13px;font-size:.69rem;cursor:pointer;color:var(--tx2);border-bottom:2px solid transparent;white-space:nowrap;transition:all .2s}
+.tab.active{color:var(--a2);border-bottom-color:var(--accent);background:rgba(59,130,246,.05)}
+.tab .tn{display:inline-block;border-radius:8px;padding:1px 5px;font-size:.55rem;margin-left:3px;font-weight:700}
+.tn-alert{background:var(--red);color:#fff}
+.tn-dev{background:var(--orange);color:#fff}
+.tn-exp{background:var(--green);color:#fff}
+.tn-bri{background:var(--purple);color:#fff}
+.tc{display:none}.tc.active{display:block}
+table{width:100%;border-collapse:collapse;font-size:.7rem}
+th,td{padding:5px 8px;text-align:left;border-bottom:1px solid rgba(71,85,105,.2)}
+th{background:rgba(51,65,85,.85);color:var(--tx2);font-weight:600;text-transform:uppercase;font-size:.57rem;letter-spacing:.4px;position:sticky;top:0;z-index:2}
+th.sortable{cursor:pointer;user-select:none}
+th.sortable:hover{color:var(--a2)}
+th .sort-ico{margin-left:3px;opacity:.4;font-size:.55rem}
+th.sort-asc .sort-ico{opacity:1;color:var(--green)}
+th.sort-desc .sort-ico{opacity:1;color:var(--orange)}
+td{color:var(--tx)}tr:hover td{background:rgba(59,130,246,.04)}
+tr.r-total td{background:rgba(51,65,85,.6)!important;font-weight:700;border-top:2px solid var(--border)}
+tr.r-miss td{background:rgba(239,68,68,.04)}
+tr.r-over td{background:rgba(249,115,22,.04)}
+tr.r-ok td{background:rgba(34,197,94,.03)}
+tr.r-bri td{background:rgba(168,85,247,.04)}
+.ok-t{color:var(--green)}.warn-t{color:var(--yellow)}.err-t{color:var(--red)}.ora-t{color:var(--orange)}.pur-t{color:var(--purple)}
+.tag{display:inline-block;padding:1px 5px;border-radius:3px;font-size:.55rem;font-weight:700;letter-spacing:.3px}
+.tag-ok{background:rgba(34,197,94,.15);color:var(--green)}
+.tag-warn{background:rgba(234,179,8,.15);color:var(--yellow)}
+.tag-err{background:rgba(239,68,68,.15);color:var(--red)}
+.tag-bri{background:rgba(168,85,247,.15);color:var(--purple)}
+.tag-phy{background:rgba(59,130,246,.15);color:var(--a2)}
+.tag-eq{background:rgba(100,116,139,.15);color:var(--tx2)}
+.log-box{background:var(--bg);border-radius:6px;border:1px solid var(--border);padding:8px 10px;font-size:.63rem;font-family:monospace;color:var(--tx2);max-height:300px;overflow-y:auto;white-space:pre-wrap;line-height:1.6}
+/* Search/filter box */
+.filter-bar{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.filter-bar input{flex:1;padding:5px 10px;background:var(--bg);border:1px solid var(--border);border-radius:var(--r);color:var(--tx);font-size:.72rem;outline:none;transition:border-color .2s}
+.filter-bar input:focus{border-color:var(--accent)}
+.filter-bar input::placeholder{color:var(--tx3)}
+.filter-bar .fc{font-size:.6rem;color:var(--tx3);white-space:nowrap}
+/* Chart container */
+.chart-wrap{padding:16px;overflow-x:auto}
+.chart-canvas{display:block;width:100%;max-width:900px;margin:0 auto}
+.chart-legend{display:flex;gap:16px;justify-content:center;margin-bottom:12px;font-size:.68rem;color:var(--tx2)}
+.chart-legend span{display:flex;align-items:center;gap:5px}
+.chart-legend span::before{content:'';display:inline-block;width:12px;height:12px;border-radius:2px}
+.leg-sil::before{background:var(--green)}
+.leg-p6::before{background:var(--accent)}
+.leg-bud::before{background:var(--purple)}
+/* CPI badge */
+.cpi-badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:10px;font-size:.72rem;font-weight:700}
+.cpi-ok{background:rgba(34,197,94,.15);color:var(--green)}
+.cpi-warn{background:rgba(234,179,8,.15);color:var(--yellow)}
+.cpi-err{background:rgba(239,68,68,.15);color:var(--red)}
+.toast{position:fixed;bottom:16px;right:16px;padding:9px 15px;border-radius:var(--r);font-size:.73rem;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.4)}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{background:var(--green);color:#fff}.toast.err{background:var(--red);color:#fff}
+.toast.warn{background:var(--yellow);color:#000}.toast.info{background:var(--accent);color:#fff}
+::-webkit-scrollbar{width:4px;height:4px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bg3);border-radius:2px}
+@media print{
+  .hdr-actions,.inp,.pills .pill:not(.ok),.flow,.bnr:not(.ok),.bnr:not(.warn){display:none!important}
+  .layout{grid-template-columns:1fr!important}
+  body{background:#fff;color:#000}
+  .card{border:1px solid #ccc}
+  .tabs{background:#f0f0f0}
+  .tab.active{color:#000;border-bottom-color:#000}
+  th{background:#e0e0e0;color:#333}
+  td{color:#111}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<div class="hdr">
+  <div class="hdr-brand">
+    <h1>CPM <em>&#8594;</em> P6 <em style="font-size:.68rem;color:var(--purple)">v14.0</em></h1>
+    <div class="sub">Cosedil PMO &nbsp;&#183;&nbsp; Budget CPM vs SIL vs P6 &nbsp;&#183;&nbsp; Mapping automatico Articolo&#8594;WBS&#8594;Activity</div>
+  </div>
+  <div class="hdr-meta">
+    <div class="meta-item">
+      <div class="ml">Commessa</div>
+      <input class="inp-commessa" id="inpCommessa" type="text" placeholder="es. C2024-001" title="Codice commessa (usato nei file esportati)">
+    </div>
+    <div class="meta-item"><div class="ml">Ultimo SIL</div><div class="mv" id="mSil">&mdash;</div></div>
+    <div class="meta-item"><div class="ml">CPI</div><div class="mv" id="mCpi">&mdash;</div></div>
+  </div>
+  <div class="hdr-actions">
+    <button class="btn-print-hdr" id="btnPrint" onclick="window.print()">&#128438; Stampa</button>
+    <button class="btn-xlsx-hdr" id="btnXlsxHdr" onclick="exportXLSX()">&#128190; XLSX (4 fogli)</button>
+    <button class="btn-exp-hdr" id="btnExpHdr" onclick="doExport()">&#11015; CSV / XER per P6</button>
+  </div>
+</div>
+
+<div class="pills">
+  <div class="pill info" id="pDocs"><div class="pi">&#128203;</div><div><div class="pl">Caricati</div><div class="pv" id="pDocsV">0/4</div></div></div>
+  <div class="pill" id="pBudget"><div class="pi">&#128176;</div><div><div class="pl">Budget CPM</div><div class="pv" id="pBudgetV">&mdash;</div></div></div>
+  <div class="pill" id="pSil"><div class="pi">&#128202;</div><div><div class="pl">SIL Diretti</div><div class="pv" id="pSilV">&mdash;</div></div></div>
+  <div class="pill" id="pSilI"><div class="pi">&#128203;</div><div><div class="pl">SIL Indiretti</div><div class="pv" id="pSilIV">&mdash;</div></div></div>
+  <div class="pill" id="pP6"><div class="pi">&#128197;</div><div><div class="pl">Export P6</div><div class="pv" id="pP6V">&mdash;</div></div></div>
+  <div class="pill" id="pCpi"><div class="pi">&#128200;</div><div><div class="pl">CPI</div><div class="pv" id="pCpiV">&mdash;</div></div></div>
+</div>
+
+<div class="flow">
+  <div class="fstep" id="f1"><div class="fdot">1</div><div class="flbl">Budget</div></div>
+  <div class="fstep" id="f2"><div class="fdot">2</div><div class="flbl">SIL Dir.</div></div>
+  <div class="fstep" id="f3"><div class="fdot">3</div><div class="flbl">SIL Indir.</div></div>
+  <div class="fstep" id="f4"><div class="fdot">4</div><div class="flbl">Export P6</div></div>
+  <div class="fstep" id="f5"><div class="fdot">&#9657;</div><div class="flbl">Calcolo</div></div>
+  <div class="fstep" id="f6"><div class="fdot">&#9657;</div><div class="flbl">Alert</div></div>
+  <div class="fstep out" id="f7"><div class="fdot">&#8594;</div><div class="flbl">Export P6</div></div>
+</div>
+
+<div class="bnr err" id="bnrNoBudget">&#9888; <div><strong>Budget CPM mancante</strong> &mdash; Il mapping Articolo&#8594;WBS non &egrave; possibile. Carica il Budget CPM.</div></div>
+<div class="bnr warn" id="bnrUnmapped">&#128308; <div id="bnrUnmTxt">WBS non mappate.</div></div>
+<div class="bnr ok" id="bnrOk">&#10003; <div><strong>Bridge completo</strong> &mdash; Tutti gli articoli SIL mappati su attivit&agrave; P6.</div></div>
+
+<div class="layout">
+  <div class="inp">
+    <div class="inp-label">Dati CPM</div>
+    <div class="dz" id="dz-budget" data-key="budget">
+      <span class="dz-badge b-ess">ESSENZIALE</span>
+      <div class="dz-ico">&#128176;</div>
+      <div class="dz-body">
+        <div class="dz-title">Budget CPM</div>
+        <div class="dz-desc">Foglio BUDGET &mdash; .xlsx</div>
+        <div class="dz-info" id="fi-budget"></div>
+      </div>
+      <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-budget">
+    </div>
+    <div class="dz" id="dz-sil" data-key="sil">
+      <span class="dz-badge b-ess">ESSENZIALE</span>
+      <div class="dz-ico">&#128202;</div>
+      <div class="dz-body">
+        <div class="dz-title">SIL Diretti</div>
+        <div class="dz-desc">Foglio &ldquo;SIL diretti&rdquo; &mdash; .xlsx</div>
+        <div class="dz-info" id="fi-sil"></div>
+      </div>
+      <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-sil">
+    </div>
+    <div class="dz" id="dz-silI" data-key="silI">
+      <span class="dz-badge b-opt">OPZIONALE</span>
+      <div class="dz-ico">&#128203;</div>
+      <div class="dz-body">
+        <div class="dz-title">SIL Indiretti</div>
+        <div class="dz-desc">Foglio &ldquo;SIL indiretti&rdquo; &mdash; .xlsx</div>
+        <div class="dz-info" id="fi-silI"></div>
+      </div>
+      <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-silI">
+    </div>
+    <div class="inp-label">Dati P6</div>
+    <div class="dz" id="dz-p6" data-key="p6">
+      <span class="dz-badge b-p6">P6</span>
+      <div class="dz-ico">&#128197;</div>
+      <div class="dz-body">
+        <div class="dz-title">Export P6</div>
+        <div class="dz-desc">Foglio EXPORT_P6 &mdash; .xlsx</div>
+        <div class="dz-info" id="fi-p6"></div>
+      </div>
+      <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-p6">
+    </div>
+    <hr class="sep">
+    <div class="inp-label">Parametri</div>
+    <div class="soglia-row">
+      <label for="inpSoglia">Soglia deviazioni (€)</label>
+      <input class="inp-soglia" id="inpSoglia" type="number" value="5000" min="0" step="1000" title="Soglia minima per segnalare una deviazione">
+    </div>
+    <hr class="sep">
+    <div class="btn-row">
+      <button class="btn btn-primary btn-sm" id="btnCalc" onclick="runBridge()" disabled>&#9654; Calcola Bridge</button>
+      <button class="btn btn-ghost btn-sm" onclick="resetAll()">&#8635; Reset</button>
+    </div>
+  </div>
+
+  <div class="out" id="outArea">
+    <div class="empty">
+      <div class="e-ico">&#128279;</div>
+      <div class="e-title">Come funziona il Bridge v14.0</div>
+      <div class="e-desc">
+        <strong>Mapping automatico a 3 livelli:</strong><br><br>
+        1&#65039;&#8419; <strong>SIL Articolo</strong> &#8594; <strong>Budget Articolo</strong> &#8594; ottieni <strong>Cod. WBS</strong><br>
+        2&#65039;&#8419; <strong>Cod. WBS</strong> &#8594; <strong>Export P6 wbs_id</strong> &#8594; lista attivit&agrave; P6<br>
+        3&#65039;&#8419; Distribuisci SIL tra attivit&agrave; proporzionalmente al <strong>act_cost</strong><br><br>
+        <strong>Novit&agrave; v14:</strong> Grafico WBS &#183; Filtri tabelle &#183; Colonne ordinabili &#183; Export XLSX multi-foglio &#183; Soglia deviazioni configurabile
+      </div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const S = { budget:null, sil:null, silI:null, p6:null, result:null };
+let _log = [];
+
+const SHEET_HINTS = {
+  budget: ['BUDGET','Budget','budget'],
+  sil:    ['SIL diretti','SIL Diretti','SIL_DIRETTI'],
+  silI:   ['SIL indiretti','SIL Indiretti','SIL_INDIRETTI'],
+  p6:     ['EXPORT_P6','Export_P6','export_p6','EXPORT P6']
+};
+
+// ── UTILITY ──────────────────────────────────────────────────────────────────
+function logMsg(m){ _log.push(m); }
+function clearLog(){ _log=[]; }
+function fmt(n){ return Math.round(n).toLocaleString('it-IT'); }
+function fmtE(n){ return (+n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtDelta(n){
+  const s=Math.abs(n).toLocaleString('it-IT',{minimumFractionDigits:2,maximumFractionDigits:2});
+  if(n>0.01) return '<span class="ora-t">+'+s+'</span>';
+  if(n<-0.01) return '<span class="err-t">('+s+')</span>';
+  return '<span class="ok-t">&mdash;</span>';
+}
+function el(tag,cls){ const e=document.createElement(tag); if(cls)e.className=cls; return e; }
+function normWBS(w){
+  if(!w) return '';
+  const s=String(w).trim();
+  const dot=s.indexOf('.');
+  if(dot===-1) return s.replace(/^0+/,'')||'0';
+  return (s.substring(0,dot).replace(/^0+/,'')||'0')+'.'+s.substring(dot+1);
+}
+function normArt(a){ return String(a).trim().toLowerCase().replace(/\s+/g,' '); }
+function isDataRow(row){
+  if(!row||!row.length) return false;
+  const f=String(row[0]).trim();
+  if(!f) return false;
+  if(/^[\u{1F300}-\u{1FFFF}]/u.test(f)) return false;
+  if(/^istruzione/i.test(f)) return false;
+  if(/^\(\*\)/i.test(f)) return false;
+  return true;
+}
+function excelDateToStr(raw){
+  const n=parseFloat(raw);
+  if(!isNaN(n)&&n>40000){
+    const d=new Date(Math.round((n-25569)*86400*1000));
+    return d.toISOString().substring(0,10);
+  }
+  return raw||'';
+}
+function getCommessa(){ return (document.getElementById('inpCommessa').value||'bridge').replace(/[^a-zA-Z0-9_-]/g,'_'); }
+function getThreshold(){ return parseFloat(document.getElementById('inpSoglia').value)||5000; }
+
+// ── FILE PARSER ───────────────────────────────────────────────────────────────
+function parseFile(file,key){
+  return new Promise((resolve,reject)=>{
+    const reader=new FileReader();
+    reader.onload=e=>{
+      try{
+        let rows;
+        const isXlsx=/\.(xlsx|xls)$/i.test(file.name);
+        if(isXlsx){
+          const wb=XLSX.read(e.target.result,{type:'array'});
+          const hints=SHEET_HINTS[key]||[];
+          let sheetName=wb.SheetNames[0];
+          for(const h of hints){
+            const found=wb.SheetNames.find(n=>n.toLowerCase()===h.toLowerCase());
+            if(found){sheetName=found;break;}
+          }
+          logMsg('Foglio selezionato per '+key+': "'+sheetName+'"');
+          const ws=wb.Sheets[sheetName];
+          rows=XLSX.utils.sheet_to_json(ws,{header:1,defval:''});
+        } else {
+          const text=new TextDecoder('utf-8').decode(e.target.result);
+          const sep=text.split('\n')[0].includes('\t')?'\t':',';
+          rows=text.split(/\r?\n/).map(l=>l.split(sep).map(c=>c.replace(/^"|"$/g,'').trim()));
+        }
+        if(key==='p6'){
+          resolve({data:null, rawRows:rows});
+          return;
+        }
+        const signals={
+          budget:['cod. wbs','articolo','importo costo'],
+          sil:   ['cod. s.i.l.','articolo','importo'],
+          silI:  ['cod. s.i.l.','articolo','importo']
+        };
+        const sigs=signals[key]||[];
+        let hIdx=-1;
+        for(let i=0;i<Math.min(12,rows.length);i++){
+          const j=rows[i].map(c=>String(c).toLowerCase()).join('|');
+          if(sigs.filter(s=>j.includes(s)).length>=2){hIdx=i;break;}
+        }
+        if(hIdx===-1) hIdx=0;
+        const headers=rows[hIdx].map(h=>String(h).trim());
+        const data=[];
+        for(let i=hIdx+1;i<rows.length;i++){
+          if(!isDataRow(rows[i])) continue;
+          if(rows[i].every(c=>String(c).trim()==='')) continue;
+          const obj={};
+          headers.forEach((h,j)=>{obj[h]=String(rows[i][j]??'').trim();});
+          data.push(obj);
+        }
+        resolve({headers,data});
+      }catch(err){reject(err);}
+    };
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ── DROP ZONES ────────────────────────────────────────────────────────────────
+document.querySelectorAll('.dz').forEach(dz=>{
+  const key=dz.dataset.key;
+  const inp=dz.querySelector('input[type=file]');
+  dz.addEventListener('click',()=>inp.click());
+  dz.addEventListener('dragover',e=>{e.preventDefault();dz.classList.add('over');});
+  dz.addEventListener('dragleave',()=>dz.classList.remove('over'));
+  dz.addEventListener('drop',e=>{e.preventDefault();dz.classList.remove('over');if(e.dataTransfer.files[0])handleFile(key,e.dataTransfer.files[0]);});
+  inp.addEventListener('change',()=>{if(inp.files[0])handleFile(key,inp.files[0]);});
+});
+
+async function handleFile(key,file){
+  showToast('info','Caricamento '+file.name+'...');
+  try{
+    const parsed=await parseFile(file,key);
+    S[key]=parsed;
+    document.getElementById('dz-'+key).classList.add('loaded');
+    const rows=parsed.data?parsed.data.length:(parsed.rawRows?parsed.rawRows.length:0);
+    document.getElementById('fi-'+key).textContent=file.name+' \u2014 '+rows+' righe';
+    updatePills();
+    if(canCompute()) document.getElementById('btnCalc').disabled=false;
+    showToast('ok',file.name+': '+rows+' righe');
+  }catch(err){
+    showToast('err','Errore: '+err.message);
+    console.error(err);
+  }
+}
+function canCompute(){ return !!(S.budget&&S.sil&&S.p6); }
+
+// ── FIELD HELPERS ─────────────────────────────────────────────────────────────
+function getF(row,...cands){
+  for(const c of cands){
+    if(row[c]!==undefined&&String(row[c]).trim()!=='') return String(row[c]).trim();
+  }
+  const keys=Object.keys(row);
+  for(const c of cands){
+    const f=keys.find(k=>k.toLowerCase()===c.toLowerCase());
+    if(f&&String(row[f]).trim()!=='') return String(row[f]).trim();
+  }
+  return '';
+}
+function getN(row,...cands){
+  return parseFloat((getF(row,...cands)||'0').replace(/[^\d.-]/g,''))||0;
+}
+
+// ── PARSERS ───────────────────────────────────────────────────────────────────
+function parseBudget(data){
+  const byArt=new Map(), byWbs=new Map();
+  data.forEach(r=>{
+    const wbs=normWBS(getF(r,'Cod. WBS','Cod.WBS','CodWBS'));
+    const art=normArt(getF(r,'Articolo','articolo'));
+    const desWbs=getF(r,'Des. WBS','Des.WBS');
+    const importo=getN(r,'Importo Costo (€)','Importo Costo','Importo Costo (euro)');
+    if(!wbs&&!art) return;
+    if(art){
+      if(!byArt.has(art)) byArt.set(art,[]);
+      byArt.get(art).push({wbs,desWbs,importo});
+    }
+    if(wbs){
+      if(!byWbs.has(wbs)) byWbs.set(wbs,{desWbs,total:0});
+      byWbs.get(wbs).total+=importo;
+    }
+  });
+  return {byArt,byWbs};
+}
+
+function parseSIL(data){
+  const items=[];
+  let latestDate='';
+  data.forEach(r=>{
+    const silNum=getF(r,'Cod. S.I.L.','Cod.S.I.L.','CodSIL');
+    const art=normArt(getF(r,'Articolo','articolo'));
+    const importo=getN(r,'Importo','importo');
+    const dataRaw=getF(r,'Data','data');
+    if(!silNum&&!art) return;
+    const dateFmt=excelDateToStr(dataRaw);
+    if(dateFmt>latestDate) latestDate=dateFmt;
+    items.push({silNum,art,importo,dataSil:dateFmt});
+  });
+  return {items,latestDate};
+}
+
+// ── PARSER P6 ─────────────────────────────────────────────────────────────────
+function parseP6fromRawRows(rows){
+  const byWbs=new Map(), byAct=new Map();
+  let hIdx=-1;
+  for(let i=0;i<Math.min(15,rows.length);i++){
+    const j=rows[i].map(c=>String(c).toLowerCase()).join('|');
+    if(j.includes('task_code')&&j.includes('wbs_id')){hIdx=i;break;}
+  }
+  if(hIdx===-1){
+    for(let i=0;i<Math.min(15,rows.length);i++){
+      const j=rows[i].map(c=>String(c).toLowerCase()).join('|');
+      if(j.includes('activity id')&&j.includes('wbs code')){
+        hIdx=i;
+        rows[i]=rows[i].map(c=>{
+          const lc=String(c).toLowerCase().trim();
+          if(lc==='activity id') return 'task_code';
+          if(lc==='wbs code') return 'wbs_id';
+          if(lc.includes('actual total cost')) return 'act_cost';
+          if(lc.includes('physical % complete')) return 'calc_phys_complete_pct';
+          if(lc==='activity status') return 'status_code';
+          return c;
+        });
+        break;
+      }
+    }
+  }
+  if(hIdx===-1){logMsg('ERRORE: header P6 non trovato');return {byWbs,byAct};}
+  const headers=rows[hIdx].map(h=>String(h).trim());
+  logMsg('P6 header (riga '+(hIdx+1)+'): '+headers.slice(0,6).join(' | '));
+  const nextRow=rows[hIdx+1]||[];
+  const nextJ=nextRow.map(c=>String(c).toLowerCase()).join('|');
+  const startData=(nextJ.includes('activity id')||nextJ.includes('activity status'))?hIdx+2:hIdx+1;
+  logMsg('P6 dati da riga '+(startData+1)+', totale righe: '+rows.length);
+  const iCode=headers.findIndex(h=>h==='task_code');
+  const iWbs=headers.findIndex(h=>h==='wbs_id');
+  const iCost=headers.findIndex(h=>h==='act_cost');
+  const iPhys=headers.findIndex(h=>h==='calc_phys_complete_pct');
+  const iStat=headers.findIndex(h=>h==='status_code');
+  logMsg('Indici colonne P6 — task_code:'+iCode+' wbs_id:'+iWbs+' act_cost:'+iCost+' phys:'+iPhys);
+  let count=0;
+  for(let i=startData;i<rows.length;i++){
+    const row=rows[i];
+    if(!isDataRow(row)) continue;
+    if(row.every(c=>String(c).trim()==='')) continue;
+    const actId=String(row[iCode]??'').trim();
+    if(!actId) continue;
+    const wbs=normWBS(String(row[iWbs]??'').trim());
+    const cost=parseFloat(String(row[iCost]??'0').replace(/[^\d.-]/g,''))||0;
+    const phys=parseFloat(String(row[iPhys]??'0').replace(/[^\d.]/g,''))||0;
+    const status=String(row[iStat]??'').trim();
+    byAct.set(actId,{actId,wbs,cost,phys,status});
+    if(!byWbs.has(wbs)) byWbs.set(wbs,[]);
+    byWbs.get(wbs).push({actId,cost,phys,status});
+    count++;
+  }
+  logMsg('P6 attività caricate: '+count+', WBS uniche: '+byWbs.size);
+  return {byWbs,byAct};
+}
+
+// ── BRIDGE PRINCIPALE ─────────────────────────────────────────────────────────
+function runBridge(){
+  clearLog();
+  logMsg('=== Bridge CPM→P6 v14.0 ===');
+  if(!S.budget||!S.sil||!S.p6){showToast('err','Carica Budget CPM, SIL Diretti e Export P6');return;}
+  const threshold=getThreshold();
+  const budget=parseBudget(S.budget.data);
+  const silDir=parseSIL(S.sil.data);
+  const silInd=S.silI&&S.silI.data?parseSIL(S.silI.data):{items:[],latestDate:''};
+  const p6=parseP6fromRawRows(S.p6.rawRows);
+  logMsg('Budget: '+budget.byWbs.size+' WBS, '+budget.byArt.size+' articoli unici');
+  logMsg('SIL Diretti: '+silDir.items.length+' righe');
+  logMsg('SIL Indiretti: '+silInd.items.length+' righe');
+  logMsg('Export P6: '+p6.byAct.size+' attività, '+p6.byWbs.size+' WBS');
+  logMsg('Soglia deviazioni: €'+fmt(threshold));
+  const latestSil=silDir.latestDate>silInd.latestDate?silDir.latestDate:silInd.latestDate;
+  if(latestSil) document.getElementById('mSil').textContent=latestSil;
+  const allSil=[...silDir.items,...silInd.items];
+  const silByArt=new Map();
+  allSil.forEach(item=>{
+    if(!item.art) return;
+    if(!silByArt.has(item.art)) silByArt.set(item.art,{total:0,rows:[]});
+    silByArt.get(item.art).total+=item.importo;
+    silByArt.get(item.art).rows.push(item);
+  });
+  const silByWbs=new Map();
+  const unmappedArts=[];
+  silByArt.forEach((silGrp,art)=>{
+    let budgetEntries=budget.byArt.get(art);
+    if(!budgetEntries||!budgetEntries.length){
+      const prefix=art.substring(0,8);
+      budget.byArt.forEach((entries,bArt)=>{
+        if(!budgetEntries&&bArt.startsWith(prefix)) budgetEntries=entries;
+      });
+    }
+    if(!budgetEntries||!budgetEntries.length){
+      unmappedArts.push({art,importo:silGrp.total,reason:'Non in Budget CPM'});
+      logMsg('⚠ Articolo non in Budget: "'+art+'" (€'+fmt(silGrp.total)+')');
+      return;
+    }
+    const wbsMap=new Map();
+    budgetEntries.forEach(e=>{
+      if(!e.wbs) return;
+      if(!wbsMap.has(e.wbs)) wbsMap.set(e.wbs,{desWbs:e.desWbs,importo:0});
+      wbsMap.get(e.wbs).importo+=e.importo;
+    });
+    const totalBud=[...wbsMap.values()].reduce((s,v)=>s+v.importo,0);
+    wbsMap.forEach((bEntry,wbs)=>{
+      const peso=totalBud>0?bEntry.importo/totalBud:1/wbsMap.size;
+      const importoAlloc=silGrp.total*peso;
+      if(!silByWbs.has(wbs)) silByWbs.set(wbs,{total:0,desWbs:bEntry.desWbs,arts:[]});
+      silByWbs.get(wbs).total+=importoAlloc;
+      silByWbs.get(wbs).arts.push({art,importo:importoAlloc,peso});
+    });
+  });
+  logMsg('Mapping Art→WBS: '+silByWbs.size+' WBS con SIL, '+unmappedArts.length+' articoli non mappati');
+  const distrib=[];
+  const unmappedWbs=[];
+  silByWbs.forEach((silWbs,wbs)=>{
+    const acts=p6.byWbs.get(wbs)||[];
+    if(!acts.length){
+      if(silWbs.total>0) logMsg('⚠ WBS non in P6: '+wbs+' (€'+fmt(silWbs.total)+')');
+      if(silWbs.total>0) unmappedWbs.push({wbs,importo:silWbs.total,desWbs:silWbs.desWbs});
+      return;
+    }
+    const totalCost=acts.reduce((s,a)=>s+a.cost,0);
+    const totalPhys=acts.reduce((s,a)=>s+a.phys,0);
+    acts.forEach(act=>{
+      let peso, method;
+      if(totalCost>0){peso=act.cost/totalCost;method='COST';}
+      else if(totalPhys>0){peso=act.phys/totalPhys;method='PHY';}
+      else{peso=1/acts.length;method='EQ';}
+      distrib.push({
+        actId:act.actId, wbs, desWbs:silWbs.desWbs,
+        method, silImporto:silWbs.total*peso,
+        p6Cost:act.cost, physPct:act.phys,
+        status:act.status, delta:silWbs.total*peso-act.cost
+      });
+    });
+  });
+  logMsg('Distribuzione: '+distrib.length+' attività P6');
+  const totalSil=[...silByWbs.values()].reduce((s,v)=>s+v.total,0);
+  const totalSilRaw=allSil.reduce((s,i)=>s+i.importo,0);
+  const totalP6=distrib.reduce((s,d)=>s+d.p6Cost,0);
+  const totalBudget=[...budget.byWbs.values()].reduce((s,v)=>s+v.total,0);
+  const cpi=totalP6>0?totalSil/totalP6:null;
+  const summaryByWbs=new Map();
+  distrib.forEach(d=>{
+    if(!summaryByWbs.has(d.wbs)) summaryByWbs.set(d.wbs,{wbs:d.wbs,desWbs:d.desWbs,silTot:0,p6Tot:0,acts:0});
+    const s=summaryByWbs.get(d.wbs);
+    s.silTot+=d.silImporto; s.p6Tot+=d.p6Cost; s.acts++;
+  });
+  const alerts=[];
+  distrib.forEach(d=>{
+    if(d.silImporto>0&&d.physPct===0&&d.status!=='Not Started')
+      alerts.push({type:'warn',actId:d.actId,wbs:d.wbs,msg:'SIL €'+fmt(d.silImporto)+' ma % fisica = 0',method:d.method});
+  });
+  unmappedArts.forEach(u=>alerts.push({type:'err',actId:'—',wbs:'—',msg:'Articolo non in Budget: "'+u.art+'" — €'+fmt(u.importo),method:'—'}));
+  unmappedWbs.forEach(u=>alerts.push({type:'err',actId:'—',wbs:u.wbs,msg:'WBS "'+u.wbs+'" non in Export P6 — €'+fmt(u.importo),method:'—'}));
+  const deviazioni=distrib
+    .filter(d=>Math.abs(d.delta)>=threshold)
+    .map(d=>({...d,absDelta:Math.abs(d.delta),pct:d.p6Cost>0?Math.abs(d.delta)/d.p6Cost:null}));
+  S.result={distrib,summaryByWbs,alerts,deviazioni,unmappedArts,unmappedWbs,
+            totalSil,totalSilRaw,totalP6,totalBudget,cpi,budget,p6,silByWbs,allSil,threshold};
+  renderResults();
+}
+
+// ── RENDER ────────────────────────────────────────────────────────────────────
+function renderResults(){
+  const R=S.result; if(!R) return;
+
+  // CPI in header
+  const cpiEl=document.getElementById('mCpi');
+  if(R.cpi!==null){
+    const cpiCls=R.cpi>=0.95&&R.cpi<=1.05?'cpi-ok':R.cpi>1.05?'cpi-warn':'cpi-err';
+    const cpiArrow=R.cpi>1.05?'↑':R.cpi<0.95?'↓':'=';
+    cpiEl.innerHTML='<span class="cpi-badge '+cpiCls+'">'+cpiArrow+' '+R.cpi.toFixed(3)+'</span>';
+  } else { cpiEl.textContent='—'; }
+
+  document.getElementById('pCpiV').textContent=R.cpi?R.cpi.toFixed(3):'—';
+  document.getElementById('pCpi').className='pill '+(R.cpi===null?'info':R.cpi>=0.95&&R.cpi<=1.05?'ok':R.cpi>1.05?'warn':'err');
+  document.getElementById('bnrNoBudget').classList.toggle('show',!S.budget);
+  const totUnm=R.unmappedArts.length+R.unmappedWbs.length;
+  document.getElementById('bnrUnmapped').classList.toggle('show',totUnm>0);
+  if(totUnm>0){
+    const lostEur=R.unmappedArts.reduce((s,u)=>s+u.importo,0)+R.unmappedWbs.reduce((s,u)=>s+u.importo,0);
+    document.getElementById('bnrUnmTxt').textContent=
+      R.unmappedArts.length+' articoli non in Budget + '+R.unmappedWbs.length+' WBS non in P6 — €'+fmt(lostEur);
+  }
+  document.getElementById('bnrOk').classList.toggle('show',totUnm===0&&R.distrib.length>0);
+  document.getElementById('btnExpHdr').classList.toggle('show',R.distrib.length>0);
+  document.getElementById('btnXlsxHdr').classList.toggle('show',R.distrib.length>0);
+  document.getElementById('btnPrint').classList.toggle('show',R.distrib.length>0);
+  ['f1','f2','f3','f4','f5','f6'].forEach(id=>document.getElementById(id).classList.remove('done','warn'));
+  if(S.budget) document.getElementById('f1').classList.add('done');
+  if(S.sil)    document.getElementById('f2').classList.add('done');
+  if(S.silI)   document.getElementById('f3').classList.add('done');
+  else         document.getElementById('f3').classList.add('warn');
+  if(S.p6)     document.getElementById('f4').classList.add('done');
+  document.getElementById('f5').classList.add('done');
+  document.getElementById('f6').classList.add(R.alerts.length>0?'warn':'done');
+
+  const out=document.getElementById('outArea'); out.innerHTML='';
+
+  // KPI card
+  const kpiCard=makeCard('&#128202; KPI Bridge');
+  const kg=el('div','kgrid');
+  kg.appendChild(makeKpi(fmtE(R.totalSil),'SIL Allocato (€)','ok'));
+  kg.appendChild(makeKpi(fmtE(R.totalP6),'P6 Costo (€)',R.totalP6>0?'ok':'warn'));
+  kg.appendChild(makeKpi(fmtE(R.totalBudget),'Budget CPM (€)','ok'));
+  kg.appendChild(makeKpi(R.cpi?R.cpi.toFixed(3):'—','CPI',R.cpi===null?'info':R.cpi>=0.95&&R.cpi<=1.05?'ok':'err'));
+  kg.appendChild(makeKpi(R.distrib.length,'Attività P6',R.distrib.length>0?'ok':'warn'));
+  kg.appendChild(makeKpi(R.alerts.length,'Alert',R.alerts.length===0?'ok':'err'));
+  kg.appendChild(makeKpi(R.deviazioni.length,'Deviazioni (≥€'+fmt(R.threshold)+')',R.deviazioni.length===0?'ok':'warn'));
+  const mappedPct=R.totalSilRaw>0?Math.round(R.totalSil/R.totalSilRaw*100):0;
+  kg.appendChild(makeKpi(mappedPct+'%','SIL Mappato',mappedPct>95?'ok':'warn'));
+  kpiCard.querySelector('.card-body').appendChild(kg);
+  out.appendChild(kpiCard);
+
+  // Tab card
+  const tabCard=makeCard(''); tabCard.querySelector('.card-head').style.display='none';
+  const tabs=el('div','tabs');
+  tabs.innerHTML=
+    '<div class="tab active" onclick="showTab(\'riepilogo\',this)">Riepilogo WBS</div>'+
+    '<div class="tab" onclick="showTab(\'grafico\',this)">&#128200; Grafico WBS</div>'+
+    '<div class="tab" onclick="showTab(\'distrib\',this)">Distribuzione P6 <span class="tn tn-bri">'+R.distrib.length+'</span></div>'+
+    '<div class="tab" onclick="showTab(\'alert\',this)">Alert <span class="tn tn-alert">'+R.alerts.length+'</span></div>'+
+    '<div class="tab" onclick="showTab(\'deviazioni\',this)">Deviazioni <span class="tn tn-dev">'+R.deviazioni.length+'</span></div>'+
+    '<div class="tab" onclick="showTab(\'export\',this)">Export P6 <span class="tn tn-exp">'+R.distrib.length+'</span></div>'+
+    '<div class="tab" onclick="showTab(\'log\',this)">&#128196; Log</div>';
+  tabCard.appendChild(tabs);
+  const tcWrap=el('div','');
+
+  // TAB RIEPILOGO
+  const tcR=el('div','tc card-body active'); tcR.id='tc-riepilogo';
+  const wbsKeys=[...R.summaryByWbs.keys()].sort();
+  if(!wbsKeys.length){tcR.innerHTML='<div class="empty"><div class="e-ico">&#128236;</div><div class="e-title">Nessun dato</div></div>';}
+  else{
+    const tbl=buildSortableTable(['WBS','Des. WBS','SIL (€)','P6 Costo (€)','Delta (€)','N. Att.','Budget (€)','Status']);
+    const fb=makeFilterBar(tbl.table,'riepilogo_filter','🔍 Filtra per WBS, descrizione...');
+    let tS=0,tP=0;
+    wbsKeys.forEach(wbs=>{
+      const s=R.summaryByWbs.get(wbs);
+      const bud=R.budget.byWbs.get(wbs);
+      const delta=s.silTot-s.p6Tot;
+      tS+=s.silTot; tP+=s.p6Tot;
+      tbl.addRow([wbs,s.desWbs||'—',fmtE(s.silTot),fmtE(s.p6Tot),fmtDelta(delta),s.acts,
+        bud?fmtE(bud.total):'—',
+        delta===0?'<span class="tag tag-ok">OK</span>':delta>0?'<span class="tag tag-warn">SIL&gt;P6</span>':'<span class="tag tag-err">P6&gt;SIL</span>'
+      ],delta>0?'r-over':delta<0?'r-miss':'r-ok');
+    });
+    R.unmappedWbs.forEach(u=>{
+      tbl.addRow([u.wbs,u.desWbs||'—',fmtE(u.importo),'—','—','—','—','<span class="tag tag-err">NO P6</span>'],'r-miss');
+    });
+    tbl.addTotalRow(['TOTALE','',fmtE(tS),fmtE(tP),fmtDelta(tS-tP),R.distrib.length,'','']);
+    const scr=el('div','card-scroll');
+    tcR.appendChild(fb);
+    scr.appendChild(tbl.table); tcR.appendChild(scr);
+  }
+  tcWrap.appendChild(tcR);
+
+  // TAB GRAFICO
+  const tcG=el('div','tc card-body'); tcG.id='tc-grafico';
+  tcG.appendChild(buildChart(R));
+  tcWrap.appendChild(tcG);
+
+  // TAB DISTRIBUZIONE
+  const tcD=el('div','tc card-body'); tcD.id='tc-distrib';
+  if(!R.distrib.length){tcD.innerHTML='<div class="empty"><div class="e-ico">&#128236;</div><div class="e-title">Nessuna attività</div></div>';}
+  else{
+    const tbl=buildSortableTable(['Activity ID','WBS','Des. WBS','Metodo','SIL Alloc. (€)','P6 Costo (€)','Phys%','Status','Delta (€)']);
+    const fb=makeFilterBar(tbl.table,'distrib_filter','🔍 Filtra per Activity ID, WBS, status...');
+    R.distrib.forEach(d=>{
+      const mt=d.method==='COST'?'<span class="tag tag-phy">COST</span>':d.method==='PHY'?'<span class="tag tag-bri">PHY</span>':'<span class="tag tag-eq">EQ</span>';
+      tbl.addRow([d.actId,d.wbs,d.desWbs||'—',mt,fmtE(d.silImporto),fmtE(d.p6Cost),(d.physPct||0).toFixed(1)+'%',d.status||'—',fmtDelta(d.delta)],d.method==='COST'?'r-ok':'r-bri');
+    });
+    const scr=el('div','card-scroll');
+    tcD.appendChild(fb);
+    scr.appendChild(tbl.table); tcD.appendChild(scr);
+  }
+  tcWrap.appendChild(tcD);
+
+  // TAB ALERT
+  const tcA=el('div','tc card-body'); tcA.id='tc-alert';
+  if(!R.alerts.length){tcA.innerHTML='<div class="empty"><div class="e-ico">&#10003;</div><div class="e-title">Nessun alert</div></div>';}
+  else{
+    const tbl=buildSortableTable(['Tipo','Activity ID','WBS','Messaggio','Metodo']);
+    const fb=makeFilterBar(tbl.table,'alert_filter','🔍 Filtra alert...');
+    R.alerts.forEach(a=>{
+      const tt=a.type==='err'?'<span class="tag tag-err">ERR</span>':'<span class="tag tag-warn">WARN</span>';
+      tbl.addRow([tt,a.actId,a.wbs,a.msg,a.method]);
+    });
+    const scr=el('div','card-scroll');
+    tcA.appendChild(fb);
+    scr.appendChild(tbl.table); tcA.appendChild(scr);
+  }
+  tcWrap.appendChild(tcA);
+
+  // TAB DEVIAZIONI
+  const tcDv=el('div','tc card-body'); tcDv.id='tc-deviazioni';
+  if(!R.deviazioni.length){tcDv.innerHTML='<div class="empty"><div class="e-ico">&#10003;</div><div class="e-title">Nessuna deviazione</div><div class="e-desc">(soglia |delta| &ge; &euro;'+fmt(R.threshold)+')</div></div>';}
+  else{
+    const tbl=buildSortableTable(['Activity ID','WBS','SIL (€)','P6 (€)','Delta (€)','Δ%','Severità']);
+    const fb=makeFilterBar(tbl.table,'dev_filter','🔍 Filtra deviazioni...');
+    R.deviazioni.sort((a,b)=>b.absDelta-a.absDelta).forEach(d=>{
+      const ps=d.pct!==null?(d.pct*100).toFixed(1)+'%':'∞';
+      const sv=d.absDelta>50000?'<span class="tag tag-err">ALTA</span>':d.absDelta>10000?'<span class="tag tag-warn">MEDIA</span>':'<span class="tag tag-ok">BASSA</span>';
+      tbl.addRow([d.actId,d.wbs,fmtE(d.silImporto),fmtE(d.p6Cost),fmtDelta(d.delta),ps,sv],d.absDelta>50000?'r-miss':d.absDelta>10000?'r-over':'');
+    });
+    const scr=el('div','card-scroll');
+    tcDv.appendChild(fb);
+    scr.appendChild(tbl.table); tcDv.appendChild(scr);
+  }
+  tcWrap.appendChild(tcDv);
+
+  // TAB EXPORT
+  const tcE=el('div','tc card-body'); tcE.id='tc-export';
+  const note=el('div',''); note.style.cssText='font-size:.7rem;color:var(--tx2);margin-bottom:10px';
+  note.innerHTML='<strong>'+R.distrib.length+'</strong> attività &nbsp;|&nbsp; COST: <strong>'+R.distrib.filter(d=>d.method==='COST').length+'</strong> &nbsp;|&nbsp; PHY: <strong>'+R.distrib.filter(d=>d.method==='PHY').length+'</strong> &nbsp;|&nbsp; EQ: <strong>'+R.distrib.filter(d=>d.method==='EQ').length+'</strong>';
+  tcE.appendChild(note);
+  const br=el('div','btn-row'); br.style.marginBottom='10px';
+  br.innerHTML='<button class="btn btn-green btn-sm" onclick="exportCSV()">&#128190; CSV per P6</button><button class="btn btn-purple btn-sm" onclick="exportXER()">&#128190; XER per P6</button><button class="btn btn-blue btn-sm" onclick="exportXLSX()">&#128190; XLSX (4 fogli)</button>';
+  tcE.appendChild(br);
+  const scr2=el('div','card-scroll');
+  const tbl2=buildSortableTable(['Activity ID','WBS','SIL Alloc. (€)','P6 Costo (€)','Delta (€)','Metodo','Status']);
+  R.distrib.slice(0,150).forEach(d=>{
+    const mt=d.method==='COST'?'<span class="tag tag-phy">COST</span>':d.method==='PHY'?'<span class="tag tag-bri">PHY</span>':'<span class="tag tag-eq">EQ</span>';
+    tbl2.addRow([d.actId,d.wbs,fmtE(d.silImporto),fmtE(d.p6Cost),fmtDelta(d.delta),mt,d.status||'—']);
+  });
+  if(R.distrib.length>150){
+    const tr=document.createElement('tr');const td=document.createElement('td');
+    td.colSpan=7;td.textContent='... e altre '+(R.distrib.length-150)+' righe (esporta per vedere tutto)';
+    td.style.cssText='text-align:center;color:var(--tx3)';tr.appendChild(td);tbl2.table.querySelector('tbody').appendChild(tr);
+  }
+  scr2.appendChild(tbl2.table); tcE.appendChild(scr2);
+  tcWrap.appendChild(tcE);
+
+  // TAB LOG
+  const tcL=el('div','tc card-body'); tcL.id='tc-log';
+  const lb=el('div','log-box'); lb.id='logBox';
+  tcL.appendChild(lb);
+  tcWrap.appendChild(tcL);
+
+  tabCard.appendChild(tcWrap);
+  out.appendChild(tabCard);
+  setTimeout(()=>{const lb=document.getElementById('logBox');if(lb)lb.textContent=_log.join('\n');},30);
+}
+
+// ── CHART ─────────────────────────────────────────────────────────────────────
+function buildChart(R){
+  const wrap=el('div','chart-wrap');
+
+  // Legend
+  const leg=el('div','chart-legend');
+  leg.innerHTML='<span class="leg-sil">SIL Allocato</span><span class="leg-p6">P6 Costo</span><span class="leg-bud">Budget CPM</span>';
+  wrap.appendChild(leg);
+
+  // Get top WBS sorted by SIL desc, max 20
+  const wbsKeys=[...R.summaryByWbs.keys()].sort((a,b)=>R.summaryByWbs.get(b).silTot-R.summaryByWbs.get(a).silTot).slice(0,20);
+  if(!wbsKeys.length){
+    const empty=el('div','empty'); empty.innerHTML='<div class="e-ico">📊</div><div class="e-title">Nessun dato WBS disponibile</div>';
+    wrap.appendChild(empty); return wrap;
+  }
+
+  const canvas=document.createElement('canvas');
+  canvas.className='chart-canvas';
+  const BAR_H=18, GAP=6, GROUP_GAP=16, LABEL_W=110, PADDING=16, VAL_PAD=6;
+  const nGroups=wbsKeys.length;
+  const H_TOTAL=PADDING*2+nGroups*(BAR_H*3+GAP*2+GROUP_GAP);
+  const W=800;
+  canvas.width=W;
+  canvas.height=H_TOTAL;
+  canvas.style.cssText='width:100%;max-width:'+W+'px;height:auto;display:block;margin:0 auto';
+
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,W,H_TOTAL);
+
+  // Find max value
+  let maxVal=0;
+  wbsKeys.forEach(wbs=>{
+    const s=R.summaryByWbs.get(wbs);
+    const bud=R.budget.byWbs.get(wbs);
+    maxVal=Math.max(maxVal,s.silTot,s.p6Tot,bud?bud.total:0);
+  });
+  if(maxVal===0) maxVal=1;
+
+  const CHART_W=W-LABEL_W-PADDING*2;
+
+  // Grid lines
+  ctx.strokeStyle='rgba(71,85,105,0.3)';
+  ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const x=LABEL_W+PADDING+(CHART_W*i/4);
+    ctx.beginPath();ctx.moveTo(x,PADDING/2);ctx.lineTo(x,H_TOTAL-PADDING/2);ctx.stroke();
+    // Value label at top
+    ctx.fillStyle='rgba(100,116,139,0.7)';
+    ctx.font='9px Segoe UI,system-ui,sans-serif';
+    ctx.textAlign='center';
+    ctx.fillText('€'+fmtShort(maxVal*i/4),x,PADDING-2);
+  }
+
+  wbsKeys.forEach((wbs,gi)=>{
+    const s=R.summaryByWbs.get(wbs);
+    const bud=R.budget.byWbs.get(wbs);
+    const yBase=PADDING+gi*(BAR_H*3+GAP*2+GROUP_GAP);
+
+    // WBS Label
+    ctx.fillStyle='#94a3b8';
+    ctx.font='bold 9px Segoe UI,system-ui,sans-serif';
+    ctx.textAlign='right';
+    const labelMax=LABEL_W-6;
+    let label=wbs;
+    if(ctx.measureText(label).width>labelMax){
+      while(ctx.measureText(label+'…').width>labelMax&&label.length>3) label=label.slice(0,-1);
+      label+='…';
+    }
+    ctx.fillText(label,LABEL_W-4,yBase+BAR_H*1.5+4);
+
+    // SIL bar (green)
+    const silW=Math.max(0,(s.silTot/maxVal)*CHART_W);
+    ctx.fillStyle='rgba(34,197,94,0.75)';
+    ctx.fillRect(LABEL_W+PADDING,yBase,silW,BAR_H);
+    if(silW>30){
+      ctx.fillStyle='#fff';ctx.font='8px Segoe UI,system-ui,sans-serif';ctx.textAlign='left';
+      ctx.fillText('€'+fmtShort(s.silTot),LABEL_W+PADDING+4,yBase+BAR_H-5);
+    }
+
+    // P6 bar (blue)
+    const p6W=Math.max(0,(s.p6Tot/maxVal)*CHART_W);
+    const y2=yBase+BAR_H+GAP;
+    ctx.fillStyle='rgba(59,130,246,0.75)';
+    ctx.fillRect(LABEL_W+PADDING,y2,p6W,BAR_H);
+    if(p6W>30){
+      ctx.fillStyle='#fff';ctx.font='8px Segoe UI,system-ui,sans-serif';ctx.textAlign='left';
+      ctx.fillText('€'+fmtShort(s.p6Tot),LABEL_W+PADDING+4,y2+BAR_H-5);
+    }
+
+    // Budget bar (purple)
+    const budVal=bud?bud.total:0;
+    const budW=Math.max(0,(budVal/maxVal)*CHART_W);
+    const y3=yBase+BAR_H*2+GAP*2;
+    ctx.fillStyle='rgba(168,85,247,0.55)';
+    ctx.fillRect(LABEL_W+PADDING,y3,budW,BAR_H);
+    if(budW>30&&budVal>0){
+      ctx.fillStyle='#fff';ctx.font='8px Segoe UI,system-ui,sans-serif';ctx.textAlign='left';
+      ctx.fillText('€'+fmtShort(budVal),LABEL_W+PADDING+4,y3+BAR_H-5);
+    }
+
+    // Delta indicator
+    const delta=s.silTot-s.p6Tot;
+    if(Math.abs(delta)>100){
+      const dX=LABEL_W+PADDING+Math.max(silW,p6W)+VAL_PAD+2;
+      ctx.fillStyle=delta>0?'#f97316':'#ef4444';
+      ctx.font='bold 8px Segoe UI,system-ui,sans-serif';
+      ctx.textAlign='left';
+      ctx.fillText((delta>0?'+':'')+fmtShort(delta),dX,yBase+BAR_H+2);
+    }
+  });
+
+  wrap.appendChild(canvas);
+
+  // Caption
+  const cap=el('div','');
+  cap.style.cssText='text-align:center;font-size:.62rem;color:var(--tx3);margin-top:8px';
+  cap.textContent='Top '+wbsKeys.length+' WBS per SIL allocato — barre orizzontali: verde=SIL, blu=P6 Costo, viola=Budget CPM';
+  wrap.appendChild(cap);
+  return wrap;
+}
+
+function fmtShort(n){
+  const a=Math.abs(n);
+  const sign=n<0?'-':'';
+  if(a>=1000000) return sign+(a/1000000).toFixed(1)+'M';
+  if(a>=1000) return sign+(a/1000).toFixed(0)+'k';
+  return sign+Math.round(a).toLocaleString('it-IT');
+}
+
+// ── SORTABLE TABLE ────────────────────────────────────────────────────────────
+function buildSortableTable(headers){
+  const table=document.createElement('table');
+  const thead=document.createElement('thead');
+  const htr=document.createElement('tr');
+  const tbody=document.createElement('tbody');
+  table.appendChild(thead); thead.appendChild(htr); table.appendChild(tbody);
+  let sortCol=-1, sortAsc=true;
+
+  const allRows=[];
+
+  headers.forEach((h,i)=>{
+    const th=document.createElement('th');
+    th.className='sortable';
+    const sp=document.createElement('span'); sp.className='sort-ico'; sp.textContent='⇅';
+    th.innerHTML=h; th.appendChild(sp);
+    th.addEventListener('click',()=>{
+      if(sortCol===i) sortAsc=!sortAsc; else{sortCol=i;sortAsc=true;}
+      htr.querySelectorAll('th').forEach((t,j)=>{
+        t.classList.remove('sort-asc','sort-desc');
+        const s=t.querySelector('.sort-ico'); if(s) s.textContent='⇅';
+      });
+      th.classList.add(sortAsc?'sort-asc':'sort-desc');
+      sp.textContent=sortAsc?'↑':'↓';
+      rerender();
+    });
+    htr.appendChild(th);
+  });
+
+  function getPlainText(html){
+    const tmp=document.createElement('div'); tmp.innerHTML=html;
+    return (tmp.textContent||tmp.innerText||'').trim();
+  }
+
+  function rerender(){
+    const nonTotal=allRows.filter(r=>!r.isTotal);
+    const total=allRows.find(r=>r.isTotal);
+    if(sortCol>=0){
+      nonTotal.sort((a,b)=>{
+        const ca=getPlainText(a.cells[sortCol]||'');
+        const cb=getPlainText(b.cells[sortCol]||'');
+        const na=parseFloat(ca.replace(/[^\d.-]/g,'')),nb=parseFloat(cb.replace(/[^\d.-]/g,''));
+        if(!isNaN(na)&&!isNaN(nb)) return sortAsc?na-nb:nb-na;
+        return sortAsc?ca.localeCompare(cb,'it'):cb.localeCompare(ca,'it');
+      });
+    }
+    tbody.innerHTML='';
+    nonTotal.forEach(r=>tbody.appendChild(r.tr));
+    if(total) tbody.appendChild(total.tr);
+  }
+
+  return {
+    table,
+    addRow(cells, rowClass){
+      const tr=document.createElement('tr');
+      if(rowClass) tr.className=rowClass;
+      cells.forEach(c=>{const td=document.createElement('td');td.innerHTML=String(c??'');tr.appendChild(td);});
+      allRows.push({tr,cells:cells.map(c=>String(c??'')),isTotal:false});
+      tbody.appendChild(tr);
+    },
+    addTotalRow(cells){
+      const tr=document.createElement('tr'); tr.className='r-total';
+      cells.forEach(c=>{const td=document.createElement('td');td.innerHTML=String(c??'');tr.appendChild(td);});
+      allRows.push({tr,cells:cells.map(c=>String(c??'')),isTotal:true});
+      tbody.appendChild(tr);
+    }
+  };
+}
+
+// ── FILTER BAR ────────────────────────────────────────────────────────────────
+function makeFilterBar(table, id, placeholder){
+  const wrap=el('div','filter-bar');
+  const inp=document.createElement('input');
+  inp.type='text'; inp.id=id; inp.placeholder=placeholder||'🔍 Filtra...';
+  const cnt=el('span','fc'); cnt.textContent='';
+  const updateCount=()=>{
+    const rows=[...table.querySelectorAll('tbody tr')].filter(r=>!r.classList.contains('r-total'));
+    const vis=rows.filter(r=>r.style.display!=='none').length;
+    cnt.textContent=vis+'/'+rows.length;
+  };
+  inp.addEventListener('input',()=>{
+    const q=inp.value.toLowerCase().trim();
+    table.querySelectorAll('tbody tr').forEach(tr=>{
+      if(tr.classList.contains('r-total')){tr.style.display='';return;}
+      tr.style.display=(!q||tr.textContent.toLowerCase().includes(q))?'':'none';
+    });
+    updateCount();
+  });
+  // Initial count
+  setTimeout(updateCount,50);
+  wrap.appendChild(inp); wrap.appendChild(cnt);
+  return wrap;
+}
+
+// ── EXPORT ────────────────────────────────────────────────────────────────────
+function exportCSV(){
+  const R=S.result; if(!R||!R.distrib.length){showToast('err','Nessun dato');return;}
+  const lines=['Activity ID,WBS,Des. WBS,Metodo,SIL Allocato (EUR),P6 Costo Attuale (EUR),Delta (EUR),Phys%,Status'];
+  R.distrib.forEach(d=>{
+    lines.push([d.actId,d.wbs,'"'+(d.desWbs||'')+'"',d.method,
+      d.silImporto.toFixed(2),d.p6Cost.toFixed(2),d.delta.toFixed(2),
+      (d.physPct||0).toFixed(2),d.status||''].join(','));
+  });
+  download('bridge_export_'+getCommessa()+'.csv',lines.join('\r\n'),'text/csv');
+  showToast('ok','CSV esportato ('+R.distrib.length+' righe)');
+}
+
+function exportXER(){
+  const R=S.result; if(!R||!R.distrib.length){showToast('err','Nessun dato');return;}
+  const lines=[
+    'ERMHDR\t4.1\t2006-05-24\tCPM-P6-Bridge\tExport\tcosedil_pmo\tMinutes',
+    '%T\tTASK',
+    '%F\ttask_id\tproj_id\twbs_id\ttask_code\tact_this_per_work_qty\tact_cost\ttarget_cost\tphys_complete_pct'
+  ];
+  R.distrib.forEach(d=>{
+    lines.push('%R\t\t\t'+d.wbs+'\t'+d.actId+'\t'+d.silImporto.toFixed(2)+'\t'+d.silImporto.toFixed(2)+'\t'+d.silImporto.toFixed(2)+'\t'+(d.physPct||0).toFixed(2));
+  });
+  lines.push('%E');
+  download('bridge_update_'+getCommessa()+'.xer',lines.join('\r\n'),'text/plain');
+  showToast('ok','XER esportato');
+}
+
+function exportXLSX(){
+  const R=S.result; if(!R||!R.distrib.length){showToast('err','Nessun dato');return;}
+  showToast('info','Generazione XLSX...');
+  setTimeout(()=>{
+    try{
+      const wb=XLSX.utils.book_new();
+      const commessa=getCommessa();
+      const ts=new Date().toISOString().substring(0,10);
+
+      // Sheet 1: Riepilogo WBS
+      const ws1=[['WBS','Des. WBS','SIL (€)','P6 Costo (€)','Delta (€)','N. Attività','Budget CPM (€)','Status']];
+      [...R.summaryByWbs.keys()].sort().forEach(wbs=>{
+        const s=R.summaryByWbs.get(wbs);
+        const bud=R.budget.byWbs.get(wbs);
+        const delta=s.silTot-s.p6Tot;
+        ws1.push([wbs,s.desWbs||'',s.silTot,s.p6Tot,delta,s.acts,bud?bud.total:'',delta===0?'OK':delta>0?'SIL>P6':'P6>SIL']);
+      });
+      R.unmappedWbs.forEach(u=>ws1.push([u.wbs,u.desWbs||'',u.importo,'','','','','NO P6']));
+      ws1.push(['TOTALE','',R.totalSil,R.totalP6,R.totalSil-R.totalP6,R.distrib.length,'','']);
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws1),'Riepilogo WBS');
+
+      // Sheet 2: Distribuzione P6
+      const ws2=[['Activity ID','WBS','Des. WBS','Metodo','SIL Allocato (€)','P6 Costo (€)','Phys%','Status','Delta (€)']];
+      R.distrib.forEach(d=>ws2.push([d.actId,d.wbs,d.desWbs||'',d.method,d.silImporto,d.p6Cost,d.physPct||0,d.status||'',d.delta]));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws2),'Distribuzione P6');
+
+      // Sheet 3: Alert
+      const ws3=[['Tipo','Activity ID','WBS','Messaggio','Metodo']];
+      R.alerts.forEach(a=>ws3.push([a.type.toUpperCase(),a.actId,a.wbs,a.msg,a.method]));
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws3),'Alert');
+
+      // Sheet 4: Deviazioni
+      const ws4=[['Activity ID','WBS','Des. WBS','SIL (€)','P6 Costo (€)','Delta (€)','Delta%','Severità']];
+      [...R.deviazioni].sort((a,b)=>b.absDelta-a.absDelta).forEach(d=>{
+        const sv=d.absDelta>50000?'ALTA':d.absDelta>10000?'MEDIA':'BASSA';
+        ws4.push([d.actId,d.wbs,d.desWbs||'',d.silImporto,d.p6Cost,d.delta,d.pct!==null?(d.pct*100).toFixed(1)+'%':'∞',sv]);
+      });
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws4),'Deviazioni');
+
+      // Sheet 5: KPI
+      const ws5=[
+        ['Parametro','Valore'],
+        ['Commessa',commessa],
+        ['Data export',ts],
+        ['SIL Allocato (€)',R.totalSil],
+        ['P6 Costo (€)',R.totalP6],
+        ['Budget CPM (€)',R.totalBudget],
+        ['CPI',R.cpi?R.cpi.toFixed(4):'N/D'],
+        ['Attività P6',R.distrib.length],
+        ['Alert',R.alerts.length],
+        ['Deviazioni (soglia €'+fmt(R.threshold)+')',R.deviazioni.length],
+        ['SIL Mappato %',R.totalSilRaw>0?Math.round(R.totalSil/R.totalSilRaw*100)+'%':'N/D'],
+        ['Ultimo SIL',document.getElementById('mSil').textContent],
+      ];
+      XLSX.utils.book_append_sheet(wb,XLSX.utils.aoa_to_sheet(ws5),'KPI');
+
+      XLSX.writeFile(wb,'CPM_P6_'+commessa+'_'+ts+'.xlsx');
+      showToast('ok','XLSX esportato (5 fogli)');
+    }catch(err){
+      showToast('err','Errore XLSX: '+err.message);
+      console.error(err);
+    }
+  },50);
+}
+
+function doExport(){ exportCSV(); }
+
+// ── HELPERS UI ────────────────────────────────────────────────────────────────
+function updatePills(){
+  const map={budget:'pBudget',sil:'pSil',silI:'pSilI',p6:'pP6'};
+  const vmap={budget:'pBudgetV',sil:'pSilV',silI:'pSilIV',p6:'pP6V'};
+  let loaded=0;
+  Object.keys(map).forEach(k=>{
+    const pill=document.getElementById(map[k]);
+    const vEl=document.getElementById(vmap[k]);
+    if(S[k]){
+      loaded++;
+      pill.className='pill ok';
+      const n=S[k].data?S[k].data.length:S[k].rawRows?S[k].rawRows.length:0;
+      vEl.textContent=n+' righe';
+    } else {pill.className='pill';vEl.textContent='—';}
+  });
+  document.getElementById('pDocsV').textContent=loaded+'/4';
+  document.getElementById('pDocs').className='pill '+(loaded>=3?'ok':'info');
+}
+
+function resetAll(){
+  Object.keys(S).forEach(k=>S[k]=null);
+  document.querySelectorAll('.dz').forEach(dz=>dz.classList.remove('loaded'));
+  document.querySelectorAll('.dz-info').forEach(e=>e.textContent='');
+  document.querySelectorAll('input[type=file]').forEach(e=>e.value='');
+  document.getElementById('outArea').innerHTML='<div class="empty"><div class="e-ico">&#128279;</div><div class="e-title">Reset completato</div></div>';
+  document.getElementById('btnCalc').disabled=true;
+  document.getElementById('btnExpHdr').classList.remove('show');
+  document.getElementById('btnXlsxHdr').classList.remove('show');
+  document.getElementById('btnPrint').classList.remove('show');
+  ['bnrNoBudget','bnrUnmapped','bnrOk'].forEach(id=>document.getElementById(id).classList.remove('show'));
+  document.getElementById('mSil').textContent='—';
+  document.getElementById('mCpi').textContent='—';
+  updatePills(); _log=[];
+}
+
+function buildTable(headers){
+  const t=document.createElement('table');
+  const thead=document.createElement('thead');
+  const tr=document.createElement('tr');
+  headers.forEach(h=>{const th=document.createElement('th');th.innerHTML=h;tr.appendChild(th);});
+  thead.appendChild(tr);t.appendChild(thead);
+  t.appendChild(document.createElement('tbody'));
+  return t;
+}
+function buildRow(cells,rowClass){
+  const tr=document.createElement('tr');
+  if(rowClass)tr.className=rowClass;
+  cells.forEach(c=>{const td=document.createElement('td');td.innerHTML=String(c??'');tr.appendChild(td);});
+  return tr;
+}
+function makeCard(title){
+  const card=el('div','card');
+  const head=el('div','card-head');
+  const h3=el('h3','');h3.innerHTML=title;head.appendChild(h3);
+  card.appendChild(head);card.appendChild(el('div','card-body'));
+  return card;
+}
+function makeKpi(val,label,cls){
+  const k=el('div','kpi '+(cls||''));
+  const kv=el('div','kv');kv.textContent=val;
+  const kl=el('div','kl');kl.textContent=label;
+  k.appendChild(kv);k.appendChild(kl);
+  return k;
+}
+function showTab(id,btn){
+  document.querySelectorAll('.tc').forEach(t=>t.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('tc-'+id).classList.add('active');
+  btn.classList.add('active');
+  if(id==='log'){const lb=document.getElementById('logBox');if(lb)lb.textContent=_log.join('\n');}
+}
+function download(name,content,mime){
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([content],{type:mime}));
+  a.download=name;a.click();
+}
+let toastTimer;
+function showToast(type,msg){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  clearTimeout(toastTimer);
+  toastTimer=setTimeout(()=>t.classList.remove('show'),3000);
+}
+</script>
+</body>
+</html>

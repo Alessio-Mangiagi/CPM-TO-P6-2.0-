@@ -1,0 +1,927 @@
+/* 
+ * Definizione delle variabili CSS per i colori e gli stili principali
+ * Queste variabili consentono di mantenere un tema coerente in tutta l'applicazione
+ */
+:root{
+  /* Colori di sfondo */
+  --bg:#0f172a;    /* Sfondo principale scuro */
+  --bg2:#1e293b;   /* Sfondo secondario */
+  --bg3:#334155;   /* Sfondo terziario */
+
+  /* Colori del testo */
+  --tx:#e2e8f0;    /* Testo principale chiaro */
+  --tx2:#94a3b8;   /* Testo secondario */
+  --tx3:#64748b;   /* Testo terziario */
+
+  /* Colori accent e funzionali */
+  --accent:#3b82f6; /* Colore principale (blu) */
+  --a2:#60a5fa;    /* Variante del colore principale */
+  --green:#22c55e;  /* Verde per successo */
+  --yellow:#eab308; /* Giallo per avvisi */
+  --red:#ef4444;    /* Rosso per errori */
+  --orange:#f97316; /* Arancione per avvisi */
+  --purple:#a855f7; /* Viola per informazioni */
+
+  /* Altri elementi visivi */
+  --border:#475569; /* Colore bordi */
+  --r:8px;         /* Raggio angoli arrotondati */
+}
+
+/* 
+ * Reset dello stile predefinito per garantire consistenza tra i browser
+ * Imposta margin, padding e box-sizing per tutti gli elementi
+ */
+*{
+  margin:0;
+  padding:0;
+  box-sizing:border-box;
+}
+
+/* 
+ * Stile per il corpo della pagina
+ * Imposta font, colori, dimensione minima e dimensione del testo
+ */
+body{
+  font-family:'Segoe UI',system-ui,sans-serif;
+  background:var(--bg);
+  color:var(--tx);
+  min-height:100vh;
+  font-size:14px;
+}
+
+/* 
+ * Contenitore principale con larghezza massima e centratura
+ * Utilizzato per limitare la larghezza del contenuto su schermi grandi
+ */
+.wrap{
+  max-width:1600px;
+  margin:0 auto;
+  padding:16px;
+}
+
+/* 
+ * Header principale con layout flessibile
+ * Mostra brand a sinistra e metadati a destra
+ */
+.hdr{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  padding:12px 18px;
+  background:var(--bg2);
+  border-radius:var(--r);
+  border:1px solid var(--border);
+  margin-bottom:10px;
+  gap:10px;
+  flex-wrap:wrap;
+}
+
+/* 
+ * Stili per il brand (titolo e descrizione)
+ */
+.hdr-brand h1{
+  font-size:1.1rem;
+  font-weight:700;
+}
+
+.hdr-brand h1 em{
+  color:var(--a2);
+  font-style:normal;
+}
+
+.hdr-brand .sub{
+  font-size:.64rem;
+  color:var(--tx3);
+  margin-top:1px;
+}
+
+/* 
+ * Contenitore per i metadati (commessa, ultimo SIL)
+ */
+.hdr-meta{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  flex-shrink:0;
+  flex-wrap:wrap;
+}
+
+/* 
+ * Stili per singoli elementi di metadato
+ */
+.meta-item .ml{
+  font-size:.55rem;
+  color:var(--tx3);
+  text-transform:uppercase;
+  letter-spacing:.4px;
+}
+
+.meta-item .mv{
+  font-size:.85rem;
+  font-weight:700;
+  color:var(--a2);
+}
+
+/* 
+ * Pulsante per esportare i dati
+ * Visibile solo quando ci sono dati da esportare
+ */
+.btn-exp-hdr{
+  padding:7px 14px;
+  border:none;
+  border-radius:var(--r);
+  font-size:.72rem;
+  font-weight:700;
+  cursor:pointer;
+  background:rgba(34,197,94,.12);
+  color:var(--green);
+  border:1px solid rgba(34,197,94,.35);
+  transition:all .2s;
+  display:none;
+  align-items:center;
+  gap:5px;
+}
+
+.btn-exp-hdr:hover{
+  background:rgba(34,197,94,.22);
+}
+
+.btn-exp-hdr.show{
+  display:flex;
+}
+
+/* 
+ * Contenitore per i pulsanti informativi (pills)
+ * Disposizione a griglia flessibile
+ */
+.pills{
+  display:flex;
+  gap:7px;
+  margin-bottom:10px;
+  flex-wrap:wrap;
+}
+
+/* 
+ * Singolo pulsante informativo (pill)
+ * Con icona, testo e valore
+ */
+.pill{
+  display:flex;
+  align-items:center;
+  gap:7px;
+  padding:7px 11px;
+  background:var(--bg2);
+  border-radius:var(--r);
+  border:1px solid var(--border);
+  flex:1;
+  min-width:100px;
+}
+
+.pill .pi{
+  font-size:1rem;
+}
+
+.pill .pl{
+  font-size:.56rem;
+  color:var(--tx2);
+  text-transform:uppercase;
+  letter-spacing:.4px;
+}
+
+.pill .pv{
+  font-size:.8rem;
+  font-weight:600;
+  margin-top:1px;
+}
+
+/* Varianti di colore per i pills */
+.pill.ok{border-color:var(--green)}
+.pill.warn{border-color:var(--yellow)}
+.pill.err{border-color:var(--red)}
+.pill.info{border-color:var(--accent)}
+
+/* 
+ * Barra di avanzamento del processo
+ * Mostra lo stato di completamento delle fasi
+ */
+.flow{
+  display:flex;
+  align-items:center;
+  background:var(--bg2);
+  border-radius:var(--r);
+  border:1px solid var(--border);
+  padding:10px 14px;
+  margin-bottom:10px;
+}
+
+/* 
+ * Singolo passo nella barra di avanzamento
+ */
+.fstep{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  position:relative;
+  padding:0 3px;
+}
+
+/* Linea di collegamento tra i passi */
+.fstep::after{
+  content:'';
+  position:absolute;
+  top:12px;
+  left:calc(50% + 15px);
+  width:calc(100% - 30px);
+  height:2px;
+  background:var(--border);
+  transition:background .3s;
+}
+
+/* Non mostrare la linea dopo l'ultimo passo */
+.fstep:last-child::after{
+  display:none;
+}
+
+/* Stile quando il passo è completato */
+.fstep.done::after{
+  background:var(--green);
+}
+
+/* 
+ * Punto indicatore del passo
+ */
+.fdot{
+  width:26px;
+  height:26px;
+  border-radius:50%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  font-size:.64rem;
+  font-weight:700;
+  border:2px solid var(--border);
+  background:var(--bg);
+  color:var(--tx3);
+  transition:all .3s;
+  margin-bottom:4px;
+}
+
+/* 
+ * Etichetta del passo
+ */
+.flbl{
+  font-size:.57rem;
+  color:var(--tx3);
+  text-align:center;
+  line-height:1.3;
+}
+
+/* Varianti di stato per il punto e l'etichetta */
+.fstep.done .fdot{
+  background:var(--green);
+  border-color:var(--green);
+  color:#fff;
+}
+.fstep.done .flbl{
+  color:var(--green);
+}
+
+.fstep.warn .fdot{
+  background:var(--yellow);
+  border-color:var(--yellow);
+  color:#000;
+}
+.fstep.warn .flbl{
+  color:var(--yellow);
+}
+
+.fstep.out .fdot{
+  background:var(--orange);
+  border-color:var(--orange);
+  color:#fff;
+}
+.fstep.out .flbl{
+  color:var(--orange);
+}
+
+/* 
+ * Messaggi di stato (avvisi, errori, successo)
+ */
+.bnr{
+  padding:8px 12px;
+  border-radius:var(--r);
+  margin-bottom:8px;
+  display:none;
+  align-items:flex-start;
+  gap:8px;
+  font-size:.72rem;
+  line-height:1.5;
+}
+
+.bnr.show{
+  display:flex;
+}
+
+.bnr.warn{
+  background:rgba(234,179,8,.07);
+  border:1px solid rgba(234,179,8,.35);
+}
+
+.bnr.err{
+  background:rgba(239,68,68,.07);
+  border:1px solid rgba(239,68,68,.35);
+}
+
+.bnr.ok{
+  background:rgba(34,197,94,.07);
+  border:1px solid rgba(34,197,94,.35);
+}
+
+/* 
+ * Layout a due colonne (input a sinistra, output a destra)
+ */
+.layout{
+  display:grid;
+  grid-template-columns:260px 1fr;
+  gap:12px;
+}
+
+/* 
+ * Ridimensiona a una sola colonna su schermi piccoli
+ */
+@media(max-width:820px){
+  .layout{
+    grid-template-columns:1fr;
+  }
+}
+
+/* 
+ * Contenitore per gli input
+ */
+.inp{
+  display:flex;
+  flex-direction:column;
+  gap:7px;
+}
+
+/* 
+ * Etichette per i gruppi di input
+ */
+.inp-label{
+  font-size:.58rem;
+  color:var(--tx3);
+  text-transform:uppercase;
+  letter-spacing:.6px;
+  padding:4px 0 2px;
+  border-top:1px solid var(--border);
+  margin-top:3px;
+}
+
+.inp-label:first-child{
+  border-top:none;
+  margin-top:0;
+}
+
+/* 
+ * Area di drop per i file
+ * Accetta file trascinati o cliccati
+ */
+.dz{
+  padding:10px 12px;
+  background:var(--bg2);
+  border:2px dashed var(--border);
+  border-radius:var(--r);
+  cursor:pointer;
+  transition:all .2s;
+  position:relative;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.dz:hover,.dz.over{
+  border-color:var(--accent);
+  background:rgba(59,130,246,.04);
+}
+
+.dz.loaded{
+  border-color:var(--green);
+  border-style:solid;
+  background:rgba(34,197,94,.04);
+}
+
+.dz-ico{
+  font-size:1.2rem;
+  flex-shrink:0;
+}
+
+.dz-body{
+  flex:1;
+  min-width:0;
+}
+
+.dz-title{
+  font-size:.73rem;
+  font-weight:600;
+  margin-bottom:1px;
+}
+
+.dz-desc{
+  font-size:.59rem;
+  color:var(--tx2);
+}
+
+.dz-info{
+  font-size:.57rem;
+  color:var(--green);
+  margin-top:2px;
+  display:none;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+
+.dz.loaded .dz-info{
+  display:block;
+}
+
+/* 
+ * Badge per distinguere i tipi di file
+ */
+.dz-badge{
+  position:absolute;
+  top:4px;
+  right:5px;
+  font-size:.52rem;
+  padding:1px 5px;
+  border-radius:3px;
+  font-weight:700;
+}
+
+.b-ess{
+  background:rgba(239,68,68,.2);
+  color:var(--red);
+}
+
+.b-opt{
+  background:rgba(234,179,8,.2);
+  color:var(--yellow);
+}
+
+.b-p6{
+  background:rgba(249,115,22,.2);
+  color:var(--orange);
+}
+
+/* Nascondi input file originale */
+input[type=file]{
+  display:none;
+}
+
+/* 
+ * Separatore orizzontale
+ */
+hr.sep{
+  border:none;
+  border-top:1px solid var(--border);
+  margin:5px 0;
+}
+
+/* 
+ * Pulsanti generali
+ */
+.btn{
+  padding:7px 13px;
+  border:none;
+  border-radius:var(--r);
+  font-size:.72rem;
+  font-weight:600;
+  cursor:pointer;
+  transition:all .2s;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+
+/* Varianti di pulsanti */
+.btn-primary{
+  background:var(--accent);
+  color:#fff;
+}
+.btn-primary:hover{
+  background:var(--a2);
+}
+.btn-primary:disabled{
+  opacity:.35;
+  cursor:not-allowed;
+}
+
+.btn-ghost{
+  background:var(--bg3);
+  color:var(--tx);
+  border:1px solid var(--border);
+}
+.btn-ghost:hover{
+  background:var(--border);
+}
+
+.btn-green{
+  background:rgba(34,197,94,.12);
+  color:var(--green);
+  border:1px solid rgba(34,197,94,.3);
+}
+.btn-green:hover{
+  background:rgba(34,197,94,.2);
+}
+
+.btn-purple{
+  background:rgba(168,85,247,.12);
+  color:var(--purple);
+  border:1px solid rgba(168,85,247,.3);
+}
+.btn-purple:hover{
+  background:rgba(168,85,247,.2);
+}
+
+/* 
+ * Contenitore per riga di pulsanti
+ */
+.btn-row{
+  display:flex;
+  gap:6px;
+  flex-wrap:wrap;
+}
+
+/* 
+ * Pulsanti piccoli
+ */
+.btn-sm{
+  padding:5px 10px;
+  font-size:.68rem;
+}
+
+/* 
+ * Contenitore per l'output
+ */
+.out{
+  display:flex;
+  flex-direction:column;
+  gap:10px;
+}
+
+/* 
+ * Stile per aree vuote
+ */
+.empty{
+  text-align:center;
+  padding:40px 16px;
+  color:var(--tx3);
+}
+
+.e-ico{
+  font-size:2rem;
+  margin-bottom:7px;
+}
+
+.e-title{
+  font-size:.86rem;
+  font-weight:600;
+  margin-bottom:6px;
+}
+
+.e-desc{
+  font-size:.73rem;
+  line-height:1.7;
+}
+
+/* 
+ * Card generica
+ */
+.card{
+  background:var(--bg2);
+  border-radius:var(--r);
+  border:1px solid var(--border);
+  overflow:hidden;
+}
+
+.card-head{
+  padding:9px 13px;
+  border-bottom:1px solid var(--border);
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:7px;
+  flex-wrap:wrap;
+}
+
+.card-head h3{
+  font-size:.8rem;
+  font-weight:600;
+}
+
+.card-body{
+  padding:12px;
+}
+
+/* 
+ * Scroll personalizzato per le card
+ */
+.card-scroll{
+  max-height:360px;
+  overflow-y:auto;
+}
+
+/* 
+ * Griglia per i KPI
+ */
+.kgrid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(100px,1fr));
+  gap:6px;
+}
+
+/* 
+ * Elemento KPI
+ */
+.kpi{
+  padding:8px 10px;
+  background:var(--bg);
+  border-radius:6px;
+  text-align:center;
+  border:1px solid transparent;
+}
+
+/* Varianti di colore per i KPI */
+.kpi.ok{border-color:rgba(34,197,94,.22)}
+.kpi.err{border-color:rgba(239,68,68,.22)}
+.kpi.warn{border-color:rgba(234,179,8,.22)}
+.kpi.info{border-color:rgba(59,130,246,.22)}
+
+.kv{
+  font-size:1.05rem;
+  font-weight:700;
+  margin-bottom:2px;
+}
+
+.kl{
+  font-size:.55rem;
+  color:var(--tx2);
+  text-transform:uppercase;
+  letter-spacing:.3px;
+}
+
+/* 
+ * Schede (tabs) per organizzare i dati
+ */
+.tabs{
+  display:flex;
+  background:var(--bg3);
+  overflow-x:auto;
+  border-bottom:1px solid var(--border);
+}
+
+.tab{
+  padding:8px 13px;
+  font-size:.69rem;
+  cursor:pointer;
+  color:var(--tx2);
+  border-bottom:2px solid transparent;
+  white-space:nowrap;
+  transition:all .2s;
+}
+
+.tab.active{
+  color:var(--a2);
+  border-bottom-color:var(--accent);
+  background:rgba(59,130,246,.05);
+}
+
+/* 
+ * Indicatori numerici nelle schede
+ */
+.tab .tn{
+  display:inline-block;
+  border-radius:8px;
+  padding:1px 5px;
+  font-size:.55rem;
+  margin-left:3px;
+  font-weight:700;
+}
+
+.tn-alert{
+  background:var(--red);
+  color:#fff;
+}
+
+.tn-dev{
+  background:var(--orange);
+  color:#fff;
+}
+
+.tn-exp{
+  background:var(--green);
+  color:#fff;
+}
+
+.tn-bri{
+  background:var(--purple);
+  color:#fff;
+}
+
+/* 
+ * Contenitore per scheda attiva
+ */
+.tc{
+  display:none;
+}
+.tc.active{
+  display:block;
+}
+
+/* 
+ * Stili per le tabelle
+ */
+table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:.7rem;
+}
+
+th,td{
+  padding:5px 8px;
+  text-align:left;
+  border-bottom:1px solid rgba(71,85,105,.2);
+}
+
+th{
+  background:rgba(51,65,85,.85);
+  color:var(--tx2);
+  font-weight:600;
+  text-transform:uppercase;
+  font-size:.57rem;
+  letter-spacing:.4px;
+  position:sticky;
+  top:0;
+  z-index:2;
+}
+
+/* Evidenziazione al passaggio del mouse */
+td{
+  color:var(--tx);
+}
+tr:hover td{
+  background:rgba(59,130,246,.04);
+}
+
+/* Stili particolari per alcune righe */
+tr.r-total td{
+  background:rgba(51,65,85,.6)!important;
+  font-weight:700;
+  border-top:2px solid var(--border);
+}
+
+tr.r-miss td{
+  background:rgba(239,68,68,.04);
+}
+
+tr.r-over td{
+  background:rgba(249,115,22,.04);
+}
+
+tr.r-ok td{
+  background:rgba(34,197,94,.03);
+}
+
+tr.r-bri td{
+  background:rgba(168,85,247,.04);
+}
+
+/* 
+ * Classi per colori di testo
+ */
+.ok-t{color:var(--green)}
+.warn-t{color:var(--yellow)}
+.err-t{color:var(--red)}
+.ora-t{color:var(--orange)}
+.pur-t{color:var(--purple)}
+
+/* 
+ * Tag per evidenziare stati
+ */
+.tag{
+  display:inline-block;
+  padding:1px 5px;
+  border-radius:3px;
+  font-size:.55rem;
+  font-weight:700;
+  letter-spacing:.3;
+}
+
+.tag-ok{
+  background:rgba(34,197,94,.15);
+  color:var(--green);
+}
+
+.tag-warn{
+  background:rgba(234,179,8,.15);
+  color:var(--yellow);
+}
+
+.tag-err{
+  background:rgba(239,68,68,.15);
+  color:var(--red);
+}
+
+.tag-bri{
+  background:rgba(168,85,247,.15);
+  color:var(--purple);
+}
+
+.tag-phy{
+  background:rgba(59,130,246,.15);
+  color:var(--a2);
+}
+
+.tag-eq{
+  background:rgba(100,116,139,.15);
+  color:var(--tx2);
+}
+
+/* 
+ * Box per il log
+ */
+.log-box{
+  background:var(--bg);
+  border-radius:6px;
+  border:1px solid var(--border);
+  padding:8px 10px;
+  font-size:.63rem;
+  font-family:monospace;
+  color:var(--tx2);
+  max-height:300px;
+  overflow-y:auto;
+  white-space:pre-wrap;
+  line-height:1.6;
+}
+
+/* 
+ * Toast per messaggi temporanei
+ */
+.toast{
+  position:fixed;
+  bottom:16px;
+  right:16px;
+  padding:9px 15px;
+  border-radius:var(--r);
+  font-size:.73rem;
+  font-weight:500;
+  z-index:9999;
+  transform:translateY(80px);
+  opacity:0;
+  transition:all .25s;
+  pointer-events:none;
+  box-shadow:0 4px 16px rgba(0,0,0,.4);
+}
+
+.toast.show{
+  transform:translateY(0);
+  opacity:1;
+}
+
+.toast.ok{
+  background:var(--green);
+  color:#fff;
+}
+
+.toast.err{
+  background:var(--red);
+  color:#fff;
+}
+
+.toast.warn{
+  background:var(--yellow);
+  color:#000;
+}
+
+.toast.info{
+  background:var(--accent);
+  color:#fff;
+}
+
+/* 
+ * Personalizzazione della scrollbar
+ */
+::-webkit-scrollbar{
+  width:4px;
+  height:4px;
+}
+
+::-webkit-scrollbar-track{
+  background:var(--bg);
+}
+
+::-webkit-scrollbar-thumb{
+  background:var(--bg3);
+  border-radius:2px;
+}

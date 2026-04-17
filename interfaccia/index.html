@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <!-- Intestazione del documento con metadati e riferimenti alle risorse esterne -->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CPM → P6 v13.1 | Cosedil PMO</title>
+    <!-- Libreria esterna per la lettura di file Excel -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+    <!-- Collegamento al foglio di stile CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Contenitore principale dell'applicazione -->
+    <div class="wrap">
+        <!-- Header principale dell'applicazione -->
+        <div class="hdr">
+            <div class="hdr-brand">
+                <!-- Titolo e versione del tool -->
+                <h1>CPM <em>&#8594;</em> P6 <em style="font-size:.68rem;color:var(--purple)">v13.1</em></h1>
+                <!-- Descrizione dell'applicazione -->
+                <div class="sub">Cosedil PMO &nbsp;&#183;&nbsp; Budget CPM vs SIL vs P6 &nbsp;&#183;&nbsp; Mapping automatico Articolo&#8594;WBS&#8594;Activity</div>
+            </div>
+            <div class="hdr-meta">
+                <!-- Informazioni sulla commessa e ultimo SIL -->
+                <div class="meta-item"><div class="ml">Commessa</div><div class="mv" id="mComm">&mdash;</div></div>
+                <div class="meta-item"><div class="ml">Ultimo SIL</div><div class="mv" id="mSil">&mdash;</div></div>
+                <!-- Bottone per esportare i dati -->
+                <button class="btn-exp-hdr" id="btnExpHdr" onclick="doExport()">&#11015; Esporta XER / CSV per P6</button>
+            </div>
+        </div>
+
+        <!-- Indicatore dello stato di caricamento dei file -->
+        <div class="pills">
+            <!-- Pill generale che mostra quanti file sono stati caricati -->
+            <div class="pill info" id="pDocs"><div class="pi">&#128203;</div><div><div class="pl">Caricati</div><div class="pv" id="pDocsV">0/4</div></div></div>
+            <!-- Pill per il Budget CPM -->
+            <div class="pill" id="pBudget"><div class="pi">&#128176;</div><div><div class="pl">Budget CPM</div><div class="pv" id="pBudgetV">&mdash;</div></div></div>
+            <!-- Pill per i SIL Diretti -->
+            <div class="pill" id="pSil"><div class="pi">&#128202;</div><div><div class="pl">SIL Diretti</div><div class="pv" id="pSilV">&mdash;</div></div></div>
+            <!-- Pill per i SIL Indiretti (opzionale) -->
+            <div class="pill" id="pSilI"><div class="pi">&#128203;</div><div><div class="pl">SIL Indiretti</div><div class="pv" id="pSilIV">&mdash;</div></div></div>
+            <!-- Pill per l'Export P6 -->
+            <div class="pill" id="pP6"><div class="pi">&#128197;</div><div><div class="pl">Export P6</div><div class="pv" id="pP6V">&mdash;</div></div></div>
+            <!-- Pill per il CPI (Cost Performance Index) -->
+            <div class="pill" id="pCpi"><div class="pi">&#128200;</div><div><div class="pl">CPI</div><div class="pv" id="pCpiV">&mdash;</div></div></div>
+        </div>
+
+        <!-- Barra di avanzamento del processo -->
+        <div class="flow">
+            <!-- Fase 1: caricamento Budget -->
+            <div class="fstep" id="f1"><div class="fdot">1</div><div class="flbl">Budget</div></div>
+            <!-- Fase 2: caricamento SIL Diretti -->
+            <div class="fstep" id="f2"><div class="fdot">2</div><div class="flbl">SIL Dir.</div></div>
+            <!-- Fase 3: caricamento SIL Indiretti -->
+            <div class="fstep" id="f3"><div class="fdot">3</div><div class="flbl">SIL Indir.</div></div>
+            <!-- Fase 4: caricamento Export P6 -->
+            <div class="fstep" id="f4"><div class="fdot">4</div><div class="flbl">Export P6</div></div>
+            <!-- Fase 5: calcolo del bridge -->
+            <div class="fstep" id="f5"><div class="fdot">&#9657;</div><div class="flbl">Calcolo</div></div>
+            <!-- Fase 6: controllo degli alert -->
+            <div class="fstep" id="f6"><div class="fdot">&#9657;</div><div class="flbl">Alert</div></div>
+            <!-- Fase 7: esportazione dati -->
+            <div class="fstep out" id="f7"><div class="fdot">&#8594;</div><div class="flbl">Export P6</div></div>
+        </div>
+
+        <!-- Messaggi di stato visibili quando ci sono problemi -->
+        <!-- Messaggio per mancanza del Budget CPM -->
+        <div class="bnr err" id="bnrNoBudget">&#9888; <div><strong>Budget CPM mancante</strong> &mdash; Il mapping Articolo&#8594;WBS non &egrave; possibile. Carica il Budget CPM.</div></div>
+        <!-- Messaggio per WBS non mappate -->
+        <div class="bnr warn" id="bnrUnmapped">&#128308; <div id="bnrUnmTxt">WBS non mappate.</div></div>
+        <!-- Messaggio di conferma quando tutto è completato correttamente -->
+        <div class="bnr ok" id="bnrOk">&#10003; <div><strong>Bridge completo</strong> &mdash; Tutti gli articoli SIL mappati su attivit&agrave; P6.</div></div>
+
+        <!-- Layout principale suddiviso in due colonne -->
+        <div class="layout">
+            <!-- Colonna sinistra con i controlli di input -->
+            <div class="inp">
+                <!-- Etichetta per i dati CPM -->
+                <div class="inp-label">Dati CPM</div>
+                
+                <!-- Area di drop per il Budget CPM -->
+                <div class="dz" id="dz-budget" data-key="budget">
+                    <span class="dz-badge b-ess">ESSENZIALE</span>
+                    <div class="dz-ico">&#128176;</div>
+                    <div class="dz-body">
+                        <div class="dz-title">Budget CPM</div>
+                        <div class="dz-desc">Foglio BUDGET &mdash; .xlsx/.xls/.csv/.txt</div>
+                        <div class="dz-info" id="fi-budget"></div>
+                    </div>
+                    <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-budget">
+                </div>
+                
+                <!-- Area di drop per i SIL Diretti -->
+                <div class="dz" id="dz-sil" data-key="sil">
+                    <span class="dz-badge b-ess">ESSENZIALE</span>
+                    <div class="dz-ico">&#128202;</div>
+                    <div class="dz-body">
+                        <div class="dz-title">SIL Diretti</div>
+                        <div class="dz-desc">Foglio &ldquo;SIL diretti&rdquo; &mdash; .xlsx/.xls/.csv/.txt</div>
+                        <div class="dz-info" id="fi-sil"></div>
+                    </div>
+                    <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-sil">
+                </div>
+                
+                <!-- Area di drop per i SIL Indiretti (opzionale) -->
+                <div class="dz" id="dz-silI" data-key="silI">
+                    <span class="dz-badge b-opt">OPZIONALE</span>
+                    <div class="dz-ico">&#128203;</div>
+                    <div class="dz-body">
+                        <div class="dz-title">SIL Indiretti</div>
+                        <div class="dz-desc">Foglio &ldquo;SIL indiretti&rdquo; &mdash; .xlsx/.xls/.csv/.txt</div>
+                        <div class="dz-info" id="fi-silI"></div>
+                    </div>
+                    <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-silI">
+                </div>
+                
+                <!-- Etichetta per i dati P6 -->
+                <div class="inp-label">Dati P6</div>
+                
+                <!-- Area di drop per l'Export P6 -->
+                <div class="dz" id="dz-p6" data-key="p6">
+                    <span class="dz-badge b-p6">P6</span>
+                    <div class="dz-ico">&#128197;</div>
+                    <div class="dz-body">
+                        <div class="dz-title">Export P6</div>
+                        <div class="dz-desc">Foglio EXPORT_P6 &mdash; .xlsx/.xls/.csv/.txt</div>
+                        <div class="dz-info" id="fi-p6"></div>
+                    </div>
+                    <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-p6">
+                </div>
+                
+                <!-- Separatore visivo -->
+                <hr class="sep">
+                
+                <!-- Pulsanti di azione -->
+                <div class="btn-row">
+                    <button class="btn btn-primary btn-sm" id="btnCalc" onclick="runBridge()" disabled>&#9654; Calcola Bridge</button>
+                    <button class="btn btn-ghost btn-sm" onclick="resetAll()">&#8635; Reset</button>
+                </div>
+                
+                <!-- Etichetta per la sezione di supporto -->
+                <div class="inp-label" style="margin-top: 20px;">Supporto</div>
+                <div class="btn-row">
+                    <button class="btn btn-ghost btn-sm" onclick="showHelp()">❓ Guida rapida</button>
+                </div>
+            </div>
+
+            <!-- Colonna destra con i risultati -->
+            <div class="out" id="outArea">
+                <div class="empty">
+                    <div class="e-ico">&#128279;</div>
+                    <div class="e-title">Come funziona il Bridge v13.1</div>
+                    <div class="e-desc">
+                        <strong>Mapping automatico a 3 livelli:</strong><br><br>
+                        1&#65039;&#8419; <strong>SIL Articolo</strong> &#8594; <strong>Budget Articolo</strong> &#8594; ottieni <strong>Cod. WBS</strong><br>
+                        2&#65039;&#8419; <strong>Cod. WBS</strong> &#8594; <strong>Export P6 wbs_id</strong> &#8594; lista attivit&agrave; P6<br>
+                        3&#65039;&#8419; Distribuisci SIL tra attivit&agrave; proporzionalmente al <strong>act_cost</strong><br><br>
+                        <strong>Carica lo stesso file Excel</strong> su tutti i campi &mdash;<br>
+                        il tool seleziona automaticamente il foglio giusto.<br><br>
+                        
+                        <strong>Formati supportati:</strong> .xlsx, .xls, .csv, .txt<br>
+                        <strong>Nomi fogli riconosciuti:</strong> BUDGET, SIL diretti/indiretti, EXPORT_P6<br><br>
+                        
+                        <button class="btn btn-primary" onclick="showHelp()">Visualizza guida completa</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Elemento per mostrare messaggi temporanei -->
+    <div class="toast" id="toast"></div>
+
+    <!-- Collegamento al file JavaScript -->
+    <script src="script.js"></script>
+</body>
+</html>
