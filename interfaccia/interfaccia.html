@@ -53,7 +53,7 @@
                     <div class="dz-ico">&#128176;</div>
                     <div class="dz-body">
                         <div class="dz-title">Budget CPM</div>
-                        <div class="dz-desc">Foglio BUDGET &mdash; .xlsx</div>
+                        <div class="dz-desc">Foglio BUDGET &mdash; .xlsx/.xls/.csv/.txt</div>
                         <div class="dz-info" id="fi-budget"></div>
                     </div>
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-budget">
@@ -63,7 +63,7 @@
                     <div class="dz-ico">&#128202;</div>
                     <div class="dz-body">
                         <div class="dz-title">SIL Diretti</div>
-                        <div class="dz-desc">Foglio &ldquo;SIL diretti&rdquo; &mdash; .xlsx</div>
+                        <div class="dz-desc">Foglio &ldquo;SIL diretti&rdquo; &mdash; .xlsx/.xls/.csv/.txt</div>
                         <div class="dz-info" id="fi-sil"></div>
                     </div>
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-sil">
@@ -73,7 +73,7 @@
                     <div class="dz-ico">&#128203;</div>
                     <div class="dz-body">
                         <div class="dz-title">SIL Indiretti</div>
-                        <div class="dz-desc">Foglio &ldquo;SIL indiretti&rdquo; &mdash; .xlsx</div>
+                        <div class="dz-desc">Foglio &ldquo;SIL indiretti&rdquo; &mdash; .xlsx/.xls/.csv/.txt</div>
                         <div class="dz-info" id="fi-silI"></div>
                     </div>
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-silI">
@@ -84,7 +84,7 @@
                     <div class="dz-ico">&#128197;</div>
                     <div class="dz-body">
                         <div class="dz-title">Export P6</div>
-                        <div class="dz-desc">Foglio EXPORT_P6 &mdash; .xlsx</div>
+                        <div class="dz-desc">Foglio EXPORT_P6 &mdash; .xlsx/.xls/.csv/.txt</div>
                         <div class="dz-info" id="fi-p6"></div>
                     </div>
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-p6">
@@ -93,6 +93,10 @@
                 <div class="btn-row">
                     <button class="btn btn-primary btn-sm" id="btnCalc" onclick="runBridge()" disabled>&#9654; Calcola Bridge</button>
                     <button class="btn btn-ghost btn-sm" onclick="resetAll()">&#8635; Reset</button>
+                </div>
+                <div class="inp-label" style="margin-top: 20px;">Supporto</div>
+                <div class="btn-row">
+                    <button class="btn btn-ghost btn-sm" onclick="showHelp()">❓ Guida rapida</button>
                 </div>
             </div>
 
@@ -106,7 +110,12 @@
                         2&#65039;&#8419; <strong>Cod. WBS</strong> &#8594; <strong>Export P6 wbs_id</strong> &#8594; lista attivit&agrave; P6<br>
                         3&#65039;&#8419; Distribuisci SIL tra attivit&agrave; proporzionalmente al <strong>act_cost</strong><br><br>
                         <strong>Carica lo stesso file Excel</strong> su tutti i campi &mdash;<br>
-                        il tool seleziona automaticamente il foglio giusto.
+                        il tool seleziona automaticamente il foglio giusto.<br><br>
+                        
+                        <strong>Formati supportati:</strong> .xlsx, .xls, .csv, .txt<br>
+                        <strong>Nomi fogli riconosciuti:</strong> BUDGET, SIL diretti/indiretti, EXPORT_P6<br><br>
+                        
+                        <button class="btn btn-primary" onclick="showHelp()">Visualizza guida completa</button>
                     </div>
                 </div>
             </div>
@@ -116,5 +125,80 @@
     <div class="toast" id="toast"></div>
 
     <script src="interfaccia.js"></script>
+    <script>
+        // Funzione per mostrare la guida utente
+        function showHelp() {
+            const helpContent = `
+                <div style="padding: 15px;">
+                    <h3 style="margin-top: 0; color: var(--a2);">Guida Rapida - CPM → P6 Bridge v13.1</h3>
+                    
+                    <h4>Prerequisiti</h4>
+                    <ul style="margin-left: 20px; margin-bottom: 15px;">
+                        <li>File Excel (.xlsx, .xls) o CSV (.csv) contenente i dati</li>
+                        <li>Fogli denominati correttamente: "BUDGET", "SIL diretti", "SIL indiretti", "EXPORT_P6"</li>
+                    </ul>
+                    
+                    <h4>Passaggi</h4>
+                    <ol style="margin-left: 20px; margin-bottom: 15px;">
+                        <li>Carica il file "Budget CPM" (foglio BUDGET)</li>
+                        <li>Carica il file "SIL Diretti" (foglio SIL diretti)</li>
+                        <li>Opzionale: Carica il file "SIL Indiretti" (foglio SIL indiretti)</li>
+                        <li>Carica il file "Export P6" (foglio EXPORT_P6)</li>
+                        <li>Clicca su "Calcola Bridge"</li>
+                        <li>Analizza i risultati e scarica l'export</li>
+                    </ol>
+                    
+                    <h4>Mappatura Colonne Comuni</h4>
+                    <p>Il sistema riconosce automaticamente queste colonne:</p>
+                    <ul style="margin-left: 20px; margin-bottom: 15px;">
+                        <li><strong>Budget CPM:</strong> "Cod. WBS", "Articolo", "Importo Costo (€)"</li>
+                        <li><strong>SIL Diretti:</strong> "Cod. S.I.L.", "Articolo", "Importo"</li>
+                        <li><strong>Export P6:</strong> "task_code", "wbs_id", "act_cost", "calc_phys_complete_pct"</li>
+                    </ul>
+                    
+                    <h4>Risultati</h4>
+                    <ul style="margin-left: 20px; margin-bottom: 15px;">
+                        <li><strong>Riepilogo WBS:</strong> Visualizza la corrispondenza tra WBS e costi</li>
+                        <li><strong>Distribuzione P6:</strong> Come i costi SIL sono distribuiti alle attività P6</li>
+                        <li><strong>Alert:</strong> Problemi identificati durante il mapping</li>
+                        <li><strong>Deviazioni:</strong> Grandi differenze tra costi allocati e costi P6</li>
+                    </ul>
+                    
+                    <p style="font-style: italic;">Per maggiori informazioni, contattare il team PMO Cosedil.</p>
+                </div>`;
+            
+            // Mostra la guida in un elemento temporaneo o sostituendo il contenuto attuale
+            const tempDiv = document.createElement('div');
+            tempDiv.className = 'card';
+            tempDiv.innerHTML = `<div class="card-head"><h3>Guida Rapida</h3></div><div class="card-body">${helpContent}</div>`;
+            
+            const outArea = document.getElementById('outArea');
+            outArea.innerHTML = '';
+            outArea.appendChild(tempDiv);
+            outArea.insertAdjacentHTML('beforeend', '<div class="btn-row" style="margin-top: 15px;"><button class="btn btn-ghost" onclick="resetOutputToInfo()">Torna indietro</button></div>');
+        }
+        
+        function resetOutputToInfo() {
+            // Ricrea il contenuto iniziale
+            document.getElementById('outArea').innerHTML = `
+                <div class="empty">
+                    <div class="e-ico">&#128279;</div>
+                    <div class="e-title">Come funziona il Bridge v13.1</div>
+                    <div class="e-desc">
+                        <strong>Mapping automatico a 3 livelli:</strong><br><br>
+                        1&#65039;&#8419; <strong>SIL Articolo</strong> &#8594; <strong>Budget Articolo</strong> &#8594; ottieni <strong>Cod. WBS</strong><br>
+                        2&#65039;&#8419; <strong>Cod. WBS</strong> &#8594; <strong>Export P6 wbs_id</strong> &#8594; lista attivit&agrave; P6<br>
+                        3&#65039;&#8419; Distribuisci SIL tra attivit&agrave; proporzionalmente al <strong>act_cost</strong><br><br>
+                        <strong>Carica lo stesso file Excel</strong> su tutti i campi &mdash;<br>
+                        il tool seleziona automaticamente il foglio giusto.<br><br>
+                        
+                        <strong>Formati supportati:</strong> .xlsx, .xls, .csv, .txt<br>
+                        <strong>Nomi fogli riconosciuti:</strong> BUDGET, SIL diretti/indiretti, EXPORT_P6<br><br>
+                        
+                        <button class="btn btn-primary" onclick="showHelp()">Visualizza guida completa</button>
+                    </div>
+                </div>`;
+        }
+    </script>
 </body>
 </html>
