@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CPM → P6 v16 | Cosedil PMO</title>
+  <link rel="stylesheet" href="interfaccia.css">
+</head>
+<body>
+  <main class="wrap">
+    <header class="hdr" role="banner">
+      <div class="hdr-brand">
+        <h1>CPM → P6 <em>v16</em></h1>
+        <div class="sub">Cosedil PMO · Budget vs SIL vs P6 · Mapping automatico Articolo → WBS → Activity</div>
+      </div>
+      <div class="hdr-meta">
+        <div class="meta-item" role="status">
+          <div class="ml">Commessa</div>
+          <div class="mv" id="mComm">—</div>
+        </div>
+        <div class="meta-item" role="status">
+          <div class="ml">Ultimo SIL</div>
+          <div class="mv" id="mSil">—</div>
+        </div>
+        <button id="btnExpHdr" class="btn-exp-hdr" aria-label="Esporta rapidamente risultato finale">⬇ Esporta Finale</button>
+      </div>
+    </header>
+
+    <div class="pills" role="group" aria-label="Stato caricamento file">
+      <div class="pill" id="pDocs"><span class="pi">📋</span><span class="pl">Caricati</span><span class="pv" id="pDocsV">0/4</span></div>
+      <div class="pill info" id="pBudget"><span class="pi">💰</span><span class="pl">Budget CPM</span><span class="pv" id="pBudgetV">—</span></div>
+      <div class="pill info" id="pSil"><span class="pi">📊</span><span class="pl">SIL Diretti</span><span class="pv" id="pSilV">—</span></div>
+      <div class="pill info" id="pSilI"><span class="pi">📋</span><span class="pl">SIL Indiretti</span><span class="pv" id="pSilIV">—</span></div>
+      <div class="pill info" id="pP6"><span class="pi">📅</span><span class="pl">Export P6</span><span class="pv" id="pP6V">—</span></div>
+    </div>
+
+    <div class="flow" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Avanzamento elaborazione">
+      <div class="fstep" id="f1"><div class="fdot">1</div><div class="flbl">Budget</div></div>
+      <div class="fstep" id="f2"><div class="fdot">2</div><div class="flbl">SIL Dir.</div></div>
+      <div class="fstep" id="f3"><div class="fdot">3</div><div class="flbl">SIL Indir.</div></div>
+      <div class="fstep" id="f4"><div class="fdot">4</div><div class="flbl">Export P6</div></div>
+      <div class="fstep" id="f5"><div class="fdot">▹</div><div class="flbl">Calcolo</div></div>
+      <div class="fstep" id="f6"><div class="fdot">▹</div><div class="flbl">Alert → Export</div></div>
+    </div>
+
+    <div id="progressBar" class="progress" role="status" aria-live="polite" style="display:none">
+      <div class="progress-fill" style="width:0%"></div>
+      <span class="progress-text">0%</span>
+    </div>
+
+    <div class="bnr warn show" id="bnrNoBudget">⚠ Budget CPM mancante — Il mapping Articolo → WBS non è possibile. Carica il Budget CPM.</div>
+    <div class="bnr err" id="bnrUnmapped"><span id="bnrUnmTxt"></span></div>
+    <div class="bnr ok" id="bnrOk">✓ Bridge completo — Tutti gli articoli SIL mappati su attività P6.</div>
+    <div class="bnr err" id="bnrError" style="display:none" aria-live="assertive"></div>
+
+    <div class="layout">
+      <section class="inp" aria-label="Caricamento file">
+        <div class="inp-label">Dati CPM ESSENZIALE</div>
+        <div class="dz" id="dz-budget" data-key="budget" tabindex="0" role="button" aria-label="Carica foglio Budget CPM">
+          <div class="dz-ico">💰</div>
+          <div class="dz-body">
+            <div class="dz-title">Budget CPM</div>
+            <div class="dz-desc">Foglio "BUDGET" — .xlsx/.xls/.csv/.txt</div>
+          </div>
+          <input type="file" accept=".xlsx,.xls,.csv,.txt" aria-hidden="true">
+          <span class="dz-badge b-ess">ESSENZIALE</span>
+          <div class="dz-info" id="fi-budget"></div>
+        </div>
+        <div class="preview-area" id="preview-budget" style="display:none">
+          <table class="preview-table"><thead id="preview-budget-header"></thead><tbody id="preview-budget-body"></tbody></table>
+        </div>
+
+        <div class="inp-label">Dati CPM ESSENZIALE</div>
+        <div class="dz" id="dz-sil" data-key="sil" tabindex="0" role="button" aria-label="Carica SIL Diretti">
+          <div class="dz-ico">📊</div>
+          <div class="dz-body">
+            <div class="dz-title">SIL Diretti</div>
+            <div class="dz-desc">Foglio "SIL diretti" — .xlsx/.xls/.csv/.txt</div>
+          </div>
+          <input type="file" accept=".xlsx,.xls,.csv,.txt" aria-hidden="true">
+          <span class="dz-badge b-ess">ESSENZIALE</span>
+          <div class="dz-info" id="fi-sil"></div>
+        </div>
+        <div class="preview-area" id="preview-sil" style="display:none">
+          <table class="preview-table"><thead id="preview-sil-header"></thead><tbody id="preview-sil-body"></tbody></table>
+        </div>
+
+        <div class="inp-label">OPZIONALE</div>
+        <div class="dz" id="dz-silI" data-key="silI" tabindex="0" role="button" aria-label="Carica SIL Indiretti">
+          <div class="dz-ico">📋</div>
+          <div class="dz-body">
+            <div class="dz-title">SIL Indiretti</div>
+            <div class="dz-desc">Foglio "SIL indiretti" — .xlsx/.xls/.csv/.txt</div>
+          </div>
+          <input type="file" accept=".xlsx,.xls,.csv,.txt" aria-hidden="true">
+          <span class="dz-badge b-opt">OPZIONALE</span>
+          <div class="dz-info" id="fi-silI"></div>
+        </div>
+
+        <div class="inp-label">Dati P6</div>
+        <div class="dz" id="dz-p6" data-key="p6" tabindex="0" role="button" aria-label="Carica Export P6">
+          <div class="dz-ico">📅</div>
+          <div class="dz-body">
+            <div class="dz-title">Export P6</div>
+            <div class="dz-desc">Foglio "EXPORT_P6" — .xlsx/.xls/.csv/.txt</div>
+          </div>
+          <input type="file" accept=".xlsx,.xls,.csv,.txt" aria-hidden="true">
+          <span class="dz-badge b-p6">P6</span>
+          <div class="dz-info" id="fi-p6"></div>
+        </div>
+        <div class="preview-area" id="preview-p6" style="display:none">
+          <table class="preview-table"><thead id="preview-p6-header"></thead><tbody id="preview-p6-body"></tbody></table>
+        </div>
+
+        <div class="inp-label">Configurazione</div>
+        <div class="cfg-row">
+          <label for="devThreshold">Soglia Deviazione (€)</label>
+          <input type="number" id="devThreshold" min="100" step="500" value="5000" style="width:90px;padding:4px;border-radius:4px;border:1px solid var(--border);background:var(--bg);color:var(--tx)">
+        </div>
+
+        <hr class="sep">
+        <div class="btn-row">
+          <button id="btnCalc" class="btn btn-primary" disabled aria-label="Avvia calcolo bridge">▶ Calcola Bridge</button>
+          <button id="btnReset" class="btn btn-ghost" aria-label="Resetta tutto">↻ Reset</button>
+        </div>
+      </section>
+
+      <section class="out" aria-label="Risultati elaborazione" id="outArea">
+        <div class="empty">
+          <div class="e-ico">🔗</div>
+          <div class="e-title">Bridge CPM → P6 v16</div>
+          <div class="e-desc">Carica i file per avviare il mapping automatico. Supporta .xlsx, .xls, .csv, .txt.<br>
+          I dati restano nel tuo browser. Nessuna upload su server.</div>
+          <div style="margin-top:12px;text-align:left;background:var(--bg2);padding:10px;border-radius:6px;border:1px solid var(--border)">
+            <strong style="color:var(--accent)">Come funziona:</strong><br>
+            1️⃣ SIL Articolo → Budget Articolo → ottieni Cod. WBS<br>
+            2️⃣ Cod. WBS → Export P6 wbs_id → lista attività P6<br>
+            3️⃣ Distribuisci SIL tra attività proporzionalmente al <code>act_cost</code> o <code>% fisica</code>.
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="interfaccia.js"></script>
+</body>
+</html>
