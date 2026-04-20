@@ -125,7 +125,7 @@ function parseFile(file,key){
           headers.forEach((h,j)=>{obj[h]=String(rows[i][j]??'').trim();});
           data.push(obj);
         }
-        resolve({headers,data});
+        resolve({headers,data, rawRows: rows});
       }catch(err){
         reject(err);
       }
@@ -153,9 +153,14 @@ async function handleFile(key,file){
     document.getElementById('dz-'+key).classList.add('loaded');
     const rows=parsed.data?parsed.data.length:(parsed.rawRows?parsed.rawRows.length:0);
     document.getElementById('fi-'+key).textContent=file.name+' \u2014 '+rows+' righe';
+    
+    // Show preview of the first few rows
+    showPreview(key, parsed.rawRows, parsed.headers);
+    
     updatePills();
     if(canCompute()){
       document.getElementById('btnCalc').disabled=false;
+      document.getElementById('btnFinalExport').disabled=false;
       // Mostra messaggio informativo quando tutti i file sono caricati
       showToast('ok', 'Tutti i file necessari sono stati caricati. Premi "Calcola Bridge" per elaborare i dati.');
     } else {
@@ -166,6 +171,69 @@ async function handleFile(key,file){
     console.error(err);
   }
 }
+
+function showPreview(key, rawRows, headers) {
+  // Show preview area
+  const previewArea = document.getElementById(`preview-${key}`);
+  previewArea.style.display = 'block';
+  
+  // Get the header and body elements for this preview table
+  const headerElement = document.getElementById(`preview-${key}-header`);
+  const bodyElement = document.getElementById(`preview-${key}-body`);
+  
+  // Clear previous content
+  headerElement.innerHTML = '';
+  bodyElement.innerHTML = '';
+  
+  // Add headers to preview table
+  if (headers && headers.length > 0) {
+    const headerRow = document.createElement('tr');
+    headers.forEach(header => {
+      const th = document.createElement('th');
+      th.textContent = header;
+      headerRow.appendChild(th);
+    });
+    headerElement.appendChild(headerRow);
+  }
+  
+  // Add first few data rows to preview table
+  if (rawRows && rawRows.length > 0) {
+    // Determine header index
+    let headerIndex = 0;
+    for(let i = 0; i < Math.min(12, rawRows.length); i++){
+      const j = rawRows[i].map(c => String(c).toLowerCase()).join('|');
+      const signals = {
+        budget: ['cod. wbs','articolo','importo costo', 'costo', 'budget', 'wbs', 'codice wbs'],
+        sil: ['cod. s.i.l.','articolo','importo', 'sil', 'costo', 'codice sil'],
+        silI: ['cod. s.i.l.','articolo','importo', 'sil', 'costo', 'codice sil'],
+        p6: ['task_code', 'wbs_id', 'act_cost', 'calc_phys_complete_pct']
+      };
+      const sigs = signals[key] || [];
+      if(sigs.filter(s => j.includes(s)).length >= 1) {
+        headerIndex = i;
+        break;
+      }
+    }
+    
+    // Add up to 5 data rows after the header
+    const maxRows = Math.min(6, rawRows.length); // Header + 5 data rows
+    for (let i = headerIndex + 1; i < maxRows; i++) {
+      if (i >= rawRows.length) break;
+      const row = rawRows[i];
+      if (!isDataRow(row)) continue;
+      if (row.every(c => String(c).trim() === '')) continue;
+      
+      const tr = document.createElement('tr');
+      row.forEach(cell => {
+        const td = document.createElement('td');
+        td.textContent = cell;
+        tr.appendChild(td);
+      });
+      bodyElement.appendChild(tr);
+    }
+  }
+}
+
 function canCompute(){ return !!(S.budget&&S.sil&&S.p6); }
 
 // ── FIELD HELPERS ─────────────────────────────────────────────────────────────
@@ -671,6 +739,103 @@ function exportXER(){
   showToast('ok','XER esportato');
 }
 
+function exportFinalResult(){
+  const R=S.result; if(!R||!R.distrib.length){showToast('err','Nessun dato da esportare');return;}
+  showToast('info','Generazione file finale in corso...');
+  
+  // Create XLSX workbook with multiple sheets
+  const wb = XLSX.utils.book_new();
+  const commessa = document.getElementById('mComm').textContent || 'bridge';
+  const ts = new Date().toISOString().substring(0,10);
+  
+  // Sheet 1: Riepilogo WBS
+  const ws1 = [['WBS','Des. WBS','SIL (€)','P6 Costo (€)','Delta (€)','N. Attività','Budget CPM (€)','Status']];
+  [...R.summaryByWbs.keys()].sort().forEach(wbs => {
+    const s = R.summaryByWbs.get(wbs);
+    const bud = R.budget.byWbs.get(wbs);
+    const delta = s.silTot - s.p6Tot;
+    ws1.push([
+      wbs, 
+      s.desWbs || '', 
+      s.silTot, 
+      s.p6Tot, 
+      delta, 
+      s.acts,
+      bud ? bud.total : '', 
+      delta === 0 ? 'OK' : delta > 0 ? 'SIL>P6' : 'P6>SIL'
+    ]);
+  });
+  R.unmappedWbs.forEach(u => ws1.push([u.wbs, u.desWbs || '', u.importo, '', '', '', '', 'NO P6']));
+  ws1.push(['TOTALE', '', R.totalSil, R.totalP6, R.totalSil - R.totalP6, R.distrib.length, '', '']);
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws1), 'Riepilogo WBS');
+
+  // Sheet 2: Distribuzione P6
+  const ws2 = [['Activity ID','Nome Attività','WBS','Des. WBS','Metodo','SIL Allocato (€)','P6 Costo (€)','Phys%','Status','Delta (€)']];
+  R.distrib.forEach(d => ws2.push([
+    d.actId, 
+    d.actName || '', 
+    d.wbs, 
+    d.desWbs || '', 
+    d.method, 
+    d.silImporto, 
+    d.p6Cost, 
+    d.physPct || 0, 
+    d.status || '', 
+    d.delta
+  ]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws2), 'Distribuzione P6');
+
+  // Sheet 3: Alert
+  const ws3 = [['Tipo','Activity ID','Nome Attività','WBS','Messaggio','Metodo']];
+  R.alerts.forEach(a => ws3.push([
+    a.type.toUpperCase(), 
+    a.actId, 
+    a.actName || '', 
+    a.wbs, 
+    a.msg, 
+    a.method
+  ]));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws3), 'Alert');
+
+  // Sheet 4: Deviazioni
+  const ws4 = [['Activity ID','Nome Attività','WBS','SIL (€)','P6 Costo (€)','Delta (€)','Delta%','Severità']];
+  [...R.deviazioni].sort((a, b) => b.absDelta - a.absDelta).forEach(d => {
+    const sv = d.absDelta > 50000 ? 'ALTA' : d.absDelta > 10000 ? 'MEDIA' : 'BASSA';
+    ws4.push([
+      d.actId, 
+      d.actName || '', 
+      d.wbs, 
+      d.silImporto, 
+      d.p6Cost, 
+      d.delta, 
+      d.pct !== null ? (d.pct * 100).toFixed(1) + '%' : '∞', 
+      sv
+    ]);
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws4), 'Deviazioni');
+
+  // Sheet 5: KPI
+  const ws5 = [
+    ['Parametro','Valore'],
+    ['Commessa', commessa],
+    ['Data export', ts],
+    ['SIL Allocato (€)', R.totalSil],
+    ['P6 Costo (€)', R.totalP6],
+    ['Budget CPM (€)', R.totalBudget],
+    ['CPI', R.cpi ? R.cpi.toFixed(4) : 'N/D'],
+    ['Attività P6', R.distrib.length],
+    ['Alert', R.alerts.length],
+    ['Deviazioni (soglia €'+fmt(R.threshold || 5000)+')', R.deviazioni.length],
+    ['SIL Mappato %', R.totalSilRaw > 0 ? Math.round(R.totalSil/R.totalSilRaw*100)+'%' : 'N/D'],
+    ['Ultimo SIL', document.getElementById('mSil').textContent]
+  ];
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(ws5), 'KPI');
+
+  // Generate the final file with all sheets
+  XLSX.writeFile(wb, `CPM_P6_${commessa}_${ts}_FINALE.xlsx`);
+  showToast('ok', 'File finale esportato con tutte le schede!');
+}
+
 function doExport(){ exportCSV(); }
 
 // ── HELPERS UI ────────────────────────────────────────────────────────────────
@@ -697,8 +862,11 @@ function resetAll(){
   document.querySelectorAll('.dz').forEach(dz=>dz.classList.remove('loaded'));
   document.querySelectorAll('.dz-info').forEach(e=>e.textContent='');
   document.querySelectorAll('input[type=file]').forEach(e=>e.value='');
+  // Hide all preview areas
+  document.querySelectorAll('.preview-area').forEach(area => area.style.display = 'none');
   document.getElementById('outArea').innerHTML='<div class="empty"><div class="e-ico">&#128279;</div><div class="e-title">Reset completato</div></div>';
   document.getElementById('btnCalc').disabled=true;
+  document.getElementById('btnFinalExport').disabled=true;
   document.getElementById('btnExpHdr').classList.remove('show');
   ['bnrNoBudget','bnrUnmapped','bnrOk'].forEach(id=>document.getElementById(id).classList.remove('show'));
   updatePills(); _log=[];

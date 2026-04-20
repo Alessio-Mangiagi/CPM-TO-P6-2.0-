@@ -108,6 +108,13 @@ tr.r-bri td{background:rgba(168,85,247,.04)}
 .tag-phy{background:rgba(59,130,246,.15);color:var(--a2)}
 .tag-eq{background:rgba(100,116,139,.15);color:var(--tx2)}
 .log-box{background:var(--bg);border-radius:6px;border:1px solid var(--border);padding:8px 10px;font-size:.63rem;font-family:monospace;color:var(--tx2);max-height:300px;overflow-y:auto;white-space:pre-wrap;line-height:1.6}
+/* Preview table styles */
+.preview-table { width: 100%; border-collapse: collapse; font-size: .65rem; max-height: 150px; overflow-y: auto; }
+.preview-table th, .preview-table td { padding: 4px 6px; text-align: left; border-bottom: 1px solid rgba(71,85,105,.2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 150px; }
+.preview-table th { background: rgba(51,65,85,.85); color: var(--tx2); font-weight: 600; text-transform: uppercase; font-size: .55rem; letter-spacing: .4px; position: sticky; top: 0; z-index: 2; }
+.preview-table td { color: var(--tx); max-height: 20px; overflow: hidden; }
+.preview-table tbody tr:nth-child(odd) { background: rgba(30,41,59,.4); }
+.preview-table tbody tr:hover { background: rgba(59,130,246,.2); }
 .toast{position:fixed;bottom:16px;right:16px;padding:9px 15px;border-radius:var(--r);font-size:.73rem;font-weight:500;z-index:9999;transform:translateY(80px);opacity:0;transition:all .25s;pointer-events:none;box-shadow:0 4px 16px rgba(0,0,0,.4)}
 .toast.show{transform:translateY(0);opacity:1}
 .toast.ok{background:var(--green);color:#fff}.toast.err{background:var(--red);color:#fff}

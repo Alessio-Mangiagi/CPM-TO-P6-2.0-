@@ -58,6 +58,19 @@
                     </div>
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-budget">
                 </div>
+                <!-- Preview area for Budget -->
+                <div class="preview-area" id="preview-budget" style="display: none; margin-top: 10px;">
+                    <div class="inp-label">Anteprima</div>
+                    <div class="card">
+                        <div class="card-body" style="padding: 8px;">
+                            <table class="preview-table">
+                                <thead id="preview-budget-header"></thead>
+                                <tbody id="preview-budget-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="dz" id="dz-sil" data-key="sil">
                     <span class="dz-badge b-ess">ESSENZIALE</span>
                     <div class="dz-ico">&#128202;</div>
@@ -68,6 +81,19 @@
                     </div>
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-sil">
                 </div>
+                <!-- Preview area for SIL -->
+                <div class="preview-area" id="preview-sil" style="display: none; margin-top: 10px;">
+                    <div class="inp-label">Anteprima</div>
+                    <div class="card">
+                        <div class="card-body" style="padding: 8px;">
+                            <table class="preview-table">
+                                <thead id="preview-sil-header"></thead>
+                                <tbody id="preview-sil-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="dz" id="dz-silI" data-key="silI">
                     <span class="dz-badge b-opt">OPZIONALE</span>
                     <div class="dz-ico">&#128203;</div>
@@ -78,6 +104,19 @@
                     </div>
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-silI">
                 </div>
+                <!-- Preview area for SIL Indiretti -->
+                <div class="preview-area" id="preview-silI" style="display: none; margin-top: 10px;">
+                    <div class="inp-label">Anteprima</div>
+                    <div class="card">
+                        <div class="card-body" style="padding: 8px;">
+                            <table class="preview-table">
+                                <thead id="preview-silI-header"></thead>
+                                <tbody id="preview-silI-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
                 <div class="inp-label">Dati P6</div>
                 <div class="dz" id="dz-p6" data-key="p6">
                     <span class="dz-badge b-p6">P6</span>
@@ -89,10 +128,27 @@
                     </div>
                     <input type="file" accept=".csv,.txt,.xlsx,.xls" id="f-p6">
                 </div>
+                <!-- Preview area for P6 -->
+                <div class="preview-area" id="preview-p6" style="display: none; margin-top: 10px;">
+                    <div class="inp-label">Anteprima</div>
+                    <div class="card">
+                        <div class="card-body" style="padding: 8px;">
+                            <table class="preview-table">
+                                <thead id="preview-p6-header"></thead>
+                                <tbody id="preview-p6-body"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                
                 <hr class="sep">
                 <div class="btn-row">
                     <button class="btn btn-primary btn-sm" id="btnCalc" onclick="runBridge()" disabled>&#9654; Calcola Bridge</button>
                     <button class="btn btn-ghost btn-sm" onclick="resetAll()">&#8635; Reset</button>
+                </div>
+                <div class="inp-label" style="margin-top: 20px;">Esportazione</div>
+                <div class="btn-row">
+                    <button class="btn btn-green btn-sm" id="btnFinalExport" onclick="exportFinalResult()" disabled>&#128190; Genera File Finale</button>
                 </div>
                 <div class="inp-label" style="margin-top: 20px;">Supporto</div>
                 <div class="btn-row">
