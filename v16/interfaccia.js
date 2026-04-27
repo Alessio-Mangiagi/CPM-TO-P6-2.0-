@@ -865,3 +865,4 @@ window.addEventListener('DOMContentLoaded', () => {
 });
 
 })();
+//Creato da Alessio Mangiagi ><(((º> sabusabu <º)))><

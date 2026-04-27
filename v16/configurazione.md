@@ -10,12 +10,12 @@
 
 Controlla quale scarto minimo tra SIL allocato e P6 Costo viene segnalato nella scheda **Deviazioni**.
 
-| Parametro | Valore |
-|-----------|--------|
-| Valore predefinito | `5.000 €` |
-| Minimo | `100 €` |
-| Passo | `500 €` |
-| Massimo accettato | `10.000.000 €` |
+| Parametro          | Valore            |
+| ------------------ | ----------------- |
+| Valore predefinito | `5.000 €`      |
+| Minimo             | `100 €`        |
+| Passo              | `500 €`        |
+| Massimo accettato  | `10.000.000 €` |
 
 La soglia viene salvata in `localStorage` con chiave `bridge_threshold` e ripristinata automaticamente alla riapertura dell'applicazione.
 
@@ -27,12 +27,12 @@ La soglia viene salvata in `localStorage` con chiave `bridge_threshold` e ripris
 
 L'applicazione cerca il foglio corretto all'interno del file Excel usando un elenco di alias (case-insensitive, corrispondenza parziale):
 
-| File | Alias cercati nell'ordine |
-|------|--------------------------|
-| Budget CPM | `BUDGET`, `Budget`, `budget`, `BUDGET CPM` |
-| SIL Diretti | `SIL diretti`, `SIL Diretti`, `SIL_DIRETTI`, `SIL DIRETTI` |
+| File          | Alias cercati nell'ordine                                                  |
+| ------------- | -------------------------------------------------------------------------- |
+| Budget CPM    | `BUDGET`, `Budget`, `budget`, `BUDGET CPM`                         |
+| SIL Diretti   | `SIL diretti`, `SIL Diretti`, `SIL_DIRETTI`, `SIL DIRETTI`         |
 | SIL Indiretti | `SIL indiretti`, `SIL Indiretti`, `SIL_INDIRETTI`, `SIL INDIRETTI` |
-| Export P6 | `EXPORT_P6`, `Export_P6`, `export_p6`, `EXPORT P6` |
+| Export P6     | `EXPORT_P6`, `Export_P6`, `export_p6`, `EXPORT P6`                 |
 
 Se nessun alias corrisponde viene usato il **primo foglio** del workbook.
 
@@ -43,16 +43,19 @@ Se nessun alias corrisponde viene usato il **primo foglio** del workbook.
 Le intestazioni vengono cercate nelle prime 12 righe del file; il match è su sottostringa case-insensitive.
 
 **Budget CPM**
+
 ```
 cod. wbs | articolo | importo costo | costo | budget | wbs | codice wbs
 ```
 
 **SIL Diretti / Indiretti**
+
 ```
 cod. s.i.l. | articolo | importo | sil | costo | codice sil
 ```
 
 **Export P6**
+
 ```
 task_code | wbs_id | act_cost | calc_phys_complete_pct | status_code | act_name
 ```
@@ -72,11 +75,11 @@ I codici WBS vengono normalizzati prima di qualsiasi confronto:
 
 Esempi:
 
-| Input | Normalizzato |
-|-------|-------------|
-| `01.002.A` | `1.2.A` |
-| `WBS.010` | `WBS.10` |
-| `A.B.C` | `A.B.C` |
+| Input        | Normalizzato |
+| ------------ | ------------ |
+| `01.002.A` | `1.2.A`    |
+| `WBS.010`  | `WBS.10`   |
+| `A.B.C`    | `A.B.C`    |
 
 ---
 
@@ -96,14 +99,14 @@ Il matching Articolo → WBS usa tre livelli di fallback in ordine:
 
 ## Limiti tecnici
 
-| Parametro | Valore |
-|-----------|--------|
-| Dimensione massima file | 30 MB |
-| Righe massime per file | 50.000 (troncamento automatico) |
-| Righe esaminate per trovare header | 12 |
-| Righe anteprima mostrate in UI | 5 |
-| Timeout alert errore UI | 6.000 ms |
-| Timeout toast notifica | 3.500 ms |
+| Parametro                          | Valore                          |
+| ---------------------------------- | ------------------------------- |
+| Dimensione massima file            | 30 MB                           |
+| Righe massime per file             | 50.000 (troncamento automatico) |
+| Righe esaminate per trovare header | 12                              |
+| Righe anteprima mostrate in UI     | 5                               |
+| Timeout alert errore UI            | 6.000 ms                        |
+| Timeout toast notifica             | 3.500 ms                        |
 
 ---
 
@@ -111,11 +114,11 @@ Il matching Articolo → WBS usa tre livelli di fallback in ordine:
 
 Quando una WBS ha più attività P6 associate, il SIL viene ripartito con questa priorità:
 
-| Priorità | Metodo | Condizione | Tag |
-|----------|--------|------------|-----|
-| 1 | Proporzionale a `act_cost` | Somma `act_cost` della WBS > 0 | `COST` |
-| 2 | Proporzionale a `% fisica` | `act_cost` = 0 e somma `phys%` > 0 | `PHY` |
-| 3 | Quota equa | Tutti i valori = 0 | `EQ` |
+| Priorità | Metodo                       | Condizione                             | Tag      |
+| --------- | ---------------------------- | -------------------------------------- | -------- |
+| 1         | Proporzionale a `act_cost` | Somma `act_cost` della WBS > 0       | `COST` |
+| 2         | Proporzionale a `% fisica` | `act_cost` = 0 e somma `phys%` > 0 | `PHY`  |
+| 3         | Quota equa                   | Tutti i valori = 0                     | `EQ`   |
 
 ---
 
@@ -130,8 +133,8 @@ Quando una WBS ha più attività P6 associate, il SIL viene ripartito con questa
 
 ## LocalStorage
 
-| Chiave | Tipo | Contenuto |
-|--------|------|-----------|
+| Chiave               | Tipo       | Contenuto                                    |
+| -------------------- | ---------- | -------------------------------------------- |
 | `bridge_threshold` | `number` | Soglia deviazione in euro (default `5000`) |
 
 Nessun altro dato viene persistito tra sessioni.
@@ -143,3 +146,5 @@ Nessun altro dato viene persistito tra sessioni.
 - Browser moderno con supporto ES2020+ (Chrome 90+, Firefox 88+, Edge 90+, Safari 14+)
 - JavaScript abilitato
 - Almeno 512 MB RAM disponibile per file da 30 MB / 50.000 righe
+
+Creato da Alessio Mangiagi ><(((º> sabusabu <º)))><
