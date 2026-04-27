@@ -745,6 +745,90 @@ function buildRow(cells, cls) {
   return tr;
 }
 
+// ── DOCS MODAL ────────────────────────────────────────────────────────────────
+function mdToHtml(md) {
+  const lines = md.split('\n');
+  let out = '', inTable = false, inList = false, inCode = false, codeLines = [];
+
+  function flush() {
+    if (inList)  { out += '</ul>'; inList  = false; }
+    if (inTable) { out += '</tbody></table>'; inTable = false; }
+  }
+  function inl(s) {
+    return String(s)
+      .replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>')
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>')
+      .replace(/`([^`]+)`/g,'<code>$1</code>');
+  }
+
+  for (let i = 0; i < lines.length; i++) {
+    const raw = lines[i];
+    const line = raw.trim();
+
+    if (/^```/.test(line)) {
+      if (!inCode) { flush(); inCode = true; codeLines = []; }
+      else {
+        const esc = codeLines.map(l => l.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')).join('\n');
+        out += `<pre><code>${esc}</code></pre>`;
+        inCode = false;
+      }
+      continue;
+    }
+    if (inCode) { codeLines.push(raw); continue; }
+
+    if (/^-{3,}$/.test(line))  { flush(); out += '<hr>'; continue; }
+    if (/^# /.test(line))      { flush(); out += `<h1>${inl(line.slice(2))}</h1>`; continue; }
+    if (/^## /.test(line))     { flush(); out += `<h2>${inl(line.slice(3))}</h2>`; continue; }
+    if (/^### /.test(line))    { flush(); out += `<h3>${inl(line.slice(4))}</h3>`; continue; }
+    if (/^#### /.test(line))   { flush(); out += `<h4>${inl(line.slice(5))}</h4>`; continue; }
+
+    if (/^\|/.test(line)) {
+      if (/^\|[-| :]+\|$/.test(line)) continue;
+      const cells = line.split('|').filter((_,j,a) => j > 0 && j < a.length - 1).map(c => c.trim());
+      if (!inTable) {
+        if (inList) { out += '</ul>'; inList = false; }
+        out += '<table><thead><tr>' + cells.map(c => `<th>${inl(c)}</th>`).join('') + '</tr></thead><tbody>';
+        inTable = true;
+        if (i + 1 < lines.length && /^\|[-| :]+\|$/.test(lines[i+1].trim())) i++;
+      } else {
+        out += '<tr>' + cells.map(c => `<td>${inl(c)}</td>`).join('') + '</tr>';
+      }
+      continue;
+    } else if (inTable) { out += '</tbody></table>'; inTable = false; }
+
+    if (/^- /.test(line)) {
+      if (!inTable && !inList) { out += '<ul>'; inList = true; }
+      out += `<li>${inl(line.slice(2))}</li>`;
+      continue;
+    } else if (inList) { out += '</ul>'; inList = false; }
+
+    if (line === '') { continue; }
+
+    out += `<p>${inl(line)}</p>`;
+  }
+  flush();
+  return out;
+}
+
+function openDoc(key) {
+  const rawEl = document.getElementById(key === 'manuale' ? 'raw-manuale' : 'raw-config');
+  const modal  = document.getElementById('docModal');
+  const titleEl = document.getElementById('docModalTitle');
+  const bodyEl  = document.getElementById('docModalBody');
+  if (!rawEl || !modal || !bodyEl) return;
+  titleEl.textContent = key === 'manuale' ? '📖 Manuale Utente' : '⚙️ Configurazione Tecnica';
+  bodyEl.innerHTML = mdToHtml(rawEl.textContent);
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  modal.focus();
+}
+
+function closeDoc() {
+  const modal = document.getElementById('docModal');
+  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
   const btnCalc = document.getElementById('btnCalc');
@@ -771,6 +855,12 @@ window.addEventListener('DOMContentLoaded', () => {
     updatePills();
     showToast('info', 'Stato resettato');
   });
+  document.getElementById('btnDocManuale')?.addEventListener('click', () => openDoc('manuale'));
+  document.getElementById('btnDocConfig')?.addEventListener('click',  () => openDoc('config'));
+  document.getElementById('docModalClose')?.addEventListener('click', closeDoc);
+  document.getElementById('docModal')?.addEventListener('click', e => { if (e.target.id === 'docModal') closeDoc(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('docModal')?.style.display !== 'none') closeDoc(); });
+
   logMsg('App inizializzata. Modalità client-side sicura attiva.');
 });
 
