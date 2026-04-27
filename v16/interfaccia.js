@@ -95,6 +95,16 @@ function validateColumns(headers, type) {
   const found = required.filter(req => headers.some(h => h.toLowerCase().includes(req)));
   return found.length > 0;
 }
+function extractCommessa(parsed, filename) {
+  if (parsed.data && parsed.data.length > 0) {
+    const row = parsed.data[0];
+    const key = Object.keys(row).find(k => /commessa|progetto|proj/i.test(k));
+    if (key && row[key]) return String(row[key]).trim();
+  }
+  const match = filename.match(/^(\d{3,})/);
+  if (match) return match[1];
+  return '';
+}
 
 // ✅ SECURITY: Sanitizza output errori per prevenire DOM XSS
 function showError(msg) {
@@ -202,6 +212,10 @@ async function handleFile(key, file) {
   try {
     const parsed = await parseFile(file, key);
     S.set(key, parsed);
+    if (key === 'budget') {
+      const comm = extractCommessa(parsed, file.name);
+      if (comm) { const mComm = document.getElementById('mComm'); if (mComm) mComm.textContent = comm; }
+    }
     document.getElementById(`dz-${key}`)?.classList.add('loaded');
     const rows = parsed.data ? parsed.data.length : (parsed.rawRows ? parsed.rawRows.length : 0);
     const infoEl = document.getElementById(`fi-${key}`);
@@ -210,7 +224,7 @@ async function handleFile(key, file) {
     updatePills();
     if (canCompute()) {
       const btnCalc = document.getElementById('btnCalc');
-      const btnExp = document.getElementById('btnFinalExport');
+      const btnExp = document.getElementById('btnExpHdr');
       if(btnCalc) btnCalc.disabled = false;
       if(btnExp) btnExp.disabled = false;
       showToast('ok', 'Tutti i file necessari caricati. Premi "Calcola Bridge".');
@@ -539,6 +553,52 @@ function setProgress(pct, txt) {
   if (pct >= 100) setTimeout(() => bar.style.display = 'none', 1500);
 }
 
+// ── EXPORT ───────────────────────────────────────────────────────────────────
+function exportXLSX() {
+  const R = S.get('result');
+  if (!R || !R.distrib.length) { showToast('err', 'Nessun risultato. Calcola prima il Bridge.'); return; }
+  if (typeof XLSX === 'undefined') { showToast('err', 'Libreria XLSX non disponibile.'); return; }
+
+  const wb = XLSX.utils.book_new();
+
+  // Distribuzione P6
+  const distribData = R.distrib.map(d => ({
+    'Activity ID': d.actId, 'Nome Attività': d.actName || '', 'WBS': d.wbs, 'Des. WBS': d.desWbs || '',
+    'Metodo': d.method, 'SIL Allocato (€)': +d.silImporto.toFixed(2), 'P6 Costo (€)': +d.p6Cost.toFixed(2),
+    'Phys%': +(d.physPct || 0).toFixed(2), 'Status': d.status || '', 'Delta (€)': +d.delta.toFixed(2)
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(distribData), 'Distribuzione P6');
+
+  // Riepilogo WBS
+  const wbsData = [...R.summaryByWbs.keys()].sort().map(wbs => {
+    const s = R.summaryByWbs.get(wbs);
+    const bud = R.budget.byWbs.get(wbs);
+    return {
+      'WBS': wbs, 'Des. WBS': s.desWbs || '',
+      'SIL (€)': +s.silTot.toFixed(2), 'P6 Costo (€)': +s.p6Tot.toFixed(2),
+      'Delta (€)': +(s.silTot - s.p6Tot).toFixed(2), 'N. Attività': s.acts,
+      'Budget (€)': bud ? +bud.total.toFixed(2) : ''
+    };
+  });
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wbsData.length ? wbsData : [{ Info: 'Nessun dato' }]), 'Riepilogo WBS');
+
+  // Alert
+  const alertData = R.alerts.map(a => ({ 'Tipo': a.type === 'warn' ? 'WARN' : 'ERR', 'Activity ID': a.actId, 'WBS': a.wbs, 'Messaggio': a.msg }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(alertData.length ? alertData : [{ Info: 'Nessun alert' }]), 'Alert');
+
+  // Deviazioni
+  const devData = R.deviazioni.map(d => ({
+    'WBS': d.wbs, 'Activity ID': d.actId, 'Delta (€)': +d.delta.toFixed(2),
+    'Valore Assoluto (€)': +d.absDelta.toFixed(2), '% su P6 Costo': d.pct !== null ? +(d.pct * 100).toFixed(2) : ''
+  }));
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(devData.length ? devData : [{ Info: 'Nessuna deviazione oltre soglia' }]), 'Deviazioni');
+
+  const date = new Date().toISOString().substring(0, 10);
+  const comm = (document.getElementById('mComm')?.textContent || 'bridge').replace(/[^\w.-]/g, '') || 'bridge';
+  XLSX.writeFile(wb, `CPM-P6-Bridge_${comm}_${date}.xlsx`);
+  showToast('ok', 'Export completato!');
+}
+
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderResults() {
   const R = S.get('result');
@@ -855,6 +915,7 @@ window.addEventListener('DOMContentLoaded', () => {
     updatePills();
     showToast('info', 'Stato resettato');
   });
+  document.getElementById('btnExpHdr')?.addEventListener('click', exportXLSX);
   document.getElementById('btnDocManuale')?.addEventListener('click', () => openDoc('manuale'));
   document.getElementById('btnDocConfig')?.addEventListener('click',  () => openDoc('config'));
   document.getElementById('docModalClose')?.addEventListener('click', closeDoc);
