@@ -5,14 +5,16 @@
 class StateManager {
   constructor() {
     this._data = { budget: null, sil: null, silI: null, p6: null, result: null };
-    this.threshold = parseInt(localStorage.getItem('bridge_threshold')) || 5000;
-    this.threshold = Math.max(100, this.threshold);
-    
+    const _rawThr = localStorage.getItem('bridge_threshold');
+    const _parsedThr = +_rawThr;
+    this.threshold = (Number.isFinite(_parsedThr) && _parsedThr >= 100) ? Math.min(_parsedThr, 10_000_000) : 5000;
+
     const devInput = document.getElementById('devThreshold');
     if (devInput) {
       devInput.value = this.threshold;
       devInput.addEventListener('change', (e) => {
-        this.threshold = Math.max(100, parseInt(e.target.value) || 5000);
+        const v = +e.target.value;
+        this.threshold = (Number.isFinite(v) && v >= 100) ? Math.min(v, 10_000_000) : 5000;
         localStorage.setItem('bridge_threshold', this.threshold);
       });
     }
@@ -44,6 +46,9 @@ const COLUMNS = {
 // ── UTILITY ──────────────────────────────────────────────────────────────────
 function logMsg(m) { _log.push(`[${new Date().toLocaleTimeString()}] ${m}`); }
 function clearLog() { _log = []; }
+function sanitizeForLog(s) {
+  return String(s).replace(/[\r\n\t\x00-\x1F\x7F]/g, ' ').substring(0, 200);
+}
 function fmt(n) { return Math.round(n || 0).toLocaleString('it-IT'); }
 function fmtE(n) { return (+n || 0).toLocaleString('it-IT', {minimumFractionDigits:2, maximumFractionDigits:2}); }
 function fmtDelta(n) {
@@ -134,7 +139,7 @@ function parseFile(file, key) {
             const found = wb.SheetNames.find(n => n.toLowerCase().includes(h.toLowerCase()));
             if (found) { sheetName = found; break; }
           }
-          logMsg(`Foglio selezionato per ${key}: "${sheetName}"`);
+          logMsg(`Foglio selezionato per ${key}: "${sanitizeForLog(sheetName)}"`);
           const ws = wb.Sheets[sheetName];
           rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
         } else {
@@ -162,6 +167,11 @@ function parseFile(file, key) {
           const obj = {};
           headers.forEach((h, j) => { obj[h] = String(rows[i][j] ?? '').trim(); });
           data.push(obj);
+        }
+        const MAX_ROWS = 50_000;
+        if (data.length > MAX_ROWS) {
+          logMsg(`⚠ File troncato a ${MAX_ROWS} righe per sicurezza`);
+          data.splice(MAX_ROWS);
         }
         resolve({ headers, data, rawRows: rows });
       } catch (err) { reject(err); }
@@ -208,7 +218,8 @@ async function handleFile(key, file) {
       showToast('ok', `${file.name}: ${rows} righe`);
     }
   } catch (err) {
-    showError('Errore parsing: ' + err.message);
+    logMsg('Parse error dettaglio: ' + err.message);
+    showError('Errore nel parsing del file. Controlla formato e codifica.');
   }
 }
 
@@ -244,7 +255,30 @@ function showPreview(key, rawRows, headers) {
 
 function canCompute() { return !!(S.get('budget') && S.get('sil') && S.get('p6')); }
 function updatePills() {
-  // Placeholder: aggiorna UI pills se necessario
+  const specs = [
+    { key: 'budget', pillId: 'pBudget', valId: 'pBudgetV', getCount: d => d.data?.length ?? 0, optional: false },
+    { key: 'sil',    pillId: 'pSil',    valId: 'pSilV',    getCount: d => d.data?.length ?? 0, optional: false },
+    { key: 'silI',   pillId: 'pSilI',   valId: 'pSilIV',   getCount: d => d.data?.length ?? 0, optional: true  },
+    { key: 'p6',     pillId: 'pP6',     valId: 'pP6V',     getCount: d => d.rawRows?.length ?? 0, optional: false },
+  ];
+  let loaded = 0;
+  specs.forEach(({ key, pillId, valId, getCount, optional }) => {
+    const d = S.get(key);
+    const pill = document.getElementById(pillId);
+    const valEl = document.getElementById(valId);
+    if (d) {
+      loaded++;
+      if (pill) pill.className = 'pill ok';
+      if (valEl) valEl.textContent = getCount(d) + ' righe';
+    } else {
+      if (pill) pill.className = optional ? 'pill warn' : 'pill info';
+      if (valEl) valEl.textContent = '—';
+    }
+  });
+  const docsEl = document.getElementById('pDocsV');
+  const docsPill = document.getElementById('pDocs');
+  if (docsEl) docsEl.textContent = `${loaded}/4`;
+  if (docsPill) docsPill.className = loaded >= 3 ? 'pill ok' : loaded > 0 ? 'pill warn' : 'pill';
 }
 
 // ── FIELD HELPERS ─────────────────────────────────────────────────────────────
@@ -556,16 +590,15 @@ function renderResults() {
   out.appendChild(kpiCard);
 
   // Tabs
-  const tabCard = makeCard(''); 
+  const tabCard = makeCard('');
   if(tabCard.querySelector('.card-head')) tabCard.querySelector('.card-head').style.display = 'none';
-  const tabs = el('div', 'tabs');
-  tabs.innerHTML = `
-    <button class="tab active" data-tab="riepilogo">Riepilogo WBS</button>
-    <button class="tab" data-tab="distrib">Distribuzione P6 <span class="tn tn-bri">${R.distrib.length}</span></button>
-    <button class="tab" data-tab="alert">Alert <span class="tn tn-alert">${R.alerts.length}</span></button>
-    <button class="tab" data-tab="deviazioni">Deviazioni <span class="tn tn-dev">${R.deviazioni.length}</span></button>
-    <button class="tab" data-tab="log">📄 Log</button>
-  `;
+  const tabs = buildTabs([
+    { label: 'Riepilogo WBS', id: 'riepilogo' },
+    { label: 'Distribuzione P6 ', id: 'distrib', count: R.distrib.length, tnClass: 'tn-bri' },
+    { label: 'Alert ', id: 'alert', count: R.alerts.length, tnClass: 'tn-alert' },
+    { label: 'Deviazioni ', id: 'deviazioni', count: R.deviazioni.length, tnClass: 'tn-dev' },
+    { label: '📄 Log', id: 'log' }
+  ]);
   tabCard.appendChild(tabs);
   const tcWrap = el('div', '');
 
@@ -583,11 +616,11 @@ function renderResults() {
       const bud = R.budget.byWbs.get(wbs);
       const delta = s.silTot - s.p6Tot;
       tS += s.silTot; tP += s.p6Tot;
-      const statusTag = delta === 0 ? '<span class="tag tag-ok">OK</span>' : delta > 0 ? '<span class="tag tag-warn">SIL >P6</span>' : '<span class="tag tag-err">P6 >SIL</span>';
+      const statusTag = delta === 0 ? {__html:'<span class="tag tag-ok">OK</span>'} : delta > 0 ? {__html:'<span class="tag tag-warn">SIL &gt;P6</span>'} : {__html:'<span class="tag tag-err">P6 &gt;SIL</span>'};
       tb.appendChild(buildRow([wbs, s.desWbs || '—', fmtE(s.silTot), fmtE(s.p6Tot), fmtDelta(delta), s.acts, bud ? fmtE(bud.total) : '—', statusTag], delta > 0 ? 'r-over' : delta < 0 ? 'r-miss' : 'r-ok'));
     });
     R.unmappedWbs.forEach(u => {
-      tb.appendChild(buildRow([u.wbs, u.desWbs || '—', fmtE(u.importo), '—', '—', '—', '—', '<span class="tag tag-err">NO P6</span>'], 'r-miss'));
+      tb.appendChild(buildRow([u.wbs, u.desWbs || '—', fmtE(u.importo), '—', '—', '—', '—', {__html:'<span class="tag tag-err">NO P6</span>'}], 'r-miss'));
     });
     tb.appendChild(buildRow(['TOTALE', '', fmtE(tS), fmtE(tP), fmtDelta(tS - tP), R.distrib.length, '', ''], 'r-total'));
     scr.appendChild(t); tcR.appendChild(scr);
@@ -602,7 +635,7 @@ function renderResults() {
     const t = buildTable(['Activity ID', 'Nome Attività', 'WBS', 'Des. WBS', 'Metodo', 'SIL Alloc. (€)', 'P6 Costo (€)', 'Phys%', 'Status', 'Delta (€)']);
     const tb = t.querySelector('tbody');
     R.distrib.forEach(d => {
-      const mtTag = d.method === 'COST' ? '<span class="tag tag-ok">COST</span>' : d.method === 'PHY' ? '<span class="tag tag-phy">PHY</span>' : '<span class="tag tag-eq">EQ</span>';
+      const mtTag = d.method === 'COST' ? {__html:'<span class="tag tag-ok">COST</span>'} : d.method === 'PHY' ? {__html:'<span class="tag tag-phy">PHY</span>'} : {__html:'<span class="tag tag-eq">EQ</span>'};
       tb.appendChild(buildRow([d.actId, d.actName || '—', d.wbs, d.desWbs || '—', mtTag, fmtE(d.silImporto), fmtE(d.p6Cost), (d.physPct || 0).toFixed(1) + '%', d.status || '—', fmtDelta(d.delta)], d.method === 'COST' ? 'r-ok' : 'r-bri'));
     });
     scr.appendChild(t); tcD.appendChild(scr);
@@ -658,6 +691,21 @@ function renderResults() {
 }
 
 // ── SAFE DOM BUILDERS ─────────────────────────────────────────────────────────
+function buildTabs(defs) {
+  const wrap = el('div', 'tabs');
+  defs.forEach(({ label, id, count, tnClass }, idx) => {
+    const btn = el('button', idx === 0 ? 'tab active' : 'tab');
+    btn.dataset.tab = id;
+    btn.textContent = label;
+    if (count !== undefined) {
+      const sp = el('span', `tn ${tnClass}`);
+      sp.textContent = String(count);
+      btn.appendChild(sp);
+    }
+    wrap.appendChild(btn);
+  });
+  return wrap;
+}
 function makeCard(title) {
   const card = el('div', 'card');
   const head = el('div', 'card-head');
@@ -687,11 +735,10 @@ function buildRow(cells, cls) {
   if (cls) tr.className = cls;
   cells.forEach(c => {
     const td = document.createElement('td');
-    // ✅ SECURITY: Usa textContent per prevenire XSS da dati file
-    if (typeof c === 'string' && c.startsWith('<')) {
-      td.innerHTML = c; // Consente solo tag noti generati dal codice
+    if (c !== null && typeof c === 'object' && c.__html) {
+      td.innerHTML = c.__html;
     } else {
-      td.textContent = c;
+      td.textContent = c ?? '';
     }
     tr.appendChild(td);
   });
@@ -707,8 +754,21 @@ window.addEventListener('DOMContentLoaded', () => {
     S.reset();
     S.cleanup();
     document.querySelectorAll('.dz').forEach(d => d.classList.remove('loaded'));
-    document.getElementById('outArea')?.remove();
+    document.querySelectorAll('input[type=file]').forEach(i => i.value = '');
+    document.querySelectorAll('.dz-info').forEach(i => i.textContent = '');
+    document.querySelectorAll('.preview-area').forEach(p => p.style.display = 'none');
+    const outArea = document.getElementById('outArea');
+    if (outArea) outArea.innerHTML = '<div class="empty"><div class="e-ico">🔗</div><div class="e-title">Stato resettato</div><div class="e-desc">Carica i file per avviare una nuova elaborazione.</div></div>';
+    document.getElementById('btnExpHdr')?.classList.remove('show');
+    const btnCalc = document.getElementById('btnCalc');
+    if (btnCalc) btnCalc.disabled = true;
+    ['bnrUnmapped','bnrOk'].forEach(id => document.getElementById(id)?.classList.remove('show'));
+    document.getElementById('bnrNoBudget')?.classList.add('show');
+    ['f1','f2','f3','f4','f5','f6'].forEach(id => document.getElementById(id)?.classList.remove('done','warn','out'));
+    const mComm = document.getElementById('mComm'); if(mComm) mComm.textContent = '—';
+    const mSil = document.getElementById('mSil'); if(mSil) mSil.textContent = '—';
     clearLog();
+    updatePills();
     showToast('info', 'Stato resettato');
   });
   logMsg('App inizializzata. Modalità client-side sicura attiva.');

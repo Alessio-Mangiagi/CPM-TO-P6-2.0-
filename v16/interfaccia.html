@@ -2,6 +2,7 @@
 <html lang="it">
 <head>
   <meta charset="UTF-8">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; connect-src 'none';">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>CPM → P6 v16 | Cosedil PMO</title>
   <link rel="stylesheet" href="interfaccia.css">
@@ -143,7 +144,7 @@
   </main>
 
   <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="xlsx.full.min.js"></script>
   <script src="interfaccia.js"></script>
 </body>
 </html>
