@@ -1,7 +1,7 @@
 (function() {
 'use strict';
 
-// 🛡️ STATE MANAGER (Memory safe, validated, localStorage sync)
+// ── STATE MANAGER ─────────────────────────────────────────────────────────────
 class StateManager {
   constructor() {
     this._data = { budget: null, sil: null, silI: null, p6: null, result: null };
@@ -22,13 +22,14 @@ class StateManager {
   get(key) { return this._data[key]; }
   set(key, val) { this._data[key] = val; }
   reset() { Object.keys(this._data).forEach(k => this._data[k] = null); }
-  cleanup() { 
-    // ✅ FIXED: Rimossa assegnazione a null che rompeva istanza
-    this._data = { budget: null, sil: null, silI: null, p6: null, result: null }; 
+  cleanup() {
+    this._data = { budget: null, sil: null, silI: null, p6: null, result: null };
   }
 }
 const S = new StateManager();
 let _log = [];
+let _cancelled = false;
+let _manualWbsMap = new Map(); // normArt → { wbs, desWbs }
 
 const SHEET_HINTS = {
   budget: ['BUDGET','Budget','budget', 'BUDGET CPM'],
@@ -43,7 +44,7 @@ const COLUMNS = {
   p6:     ['task_code','wbs_id','act_cost','calc_phys_complete_pct','status_code','act_name']
 };
 
-// ── UTILITY ──────────────────────────────────────────────────────────────────
+// ── UTILITY ───────────────────────────────────────────────────────────────────
 function logMsg(m) { _log.push(`[${new Date().toLocaleTimeString()}] ${m}`); }
 function clearLog() { _log = []; }
 function sanitizeForLog(s) {
@@ -57,13 +58,12 @@ function fmtDelta(n) {
   if (n < -0.01) return `(${s}€)`;
   return '—';
 }
-function el(tag, cls) { 
-  const e = document.createElement(tag); 
-  if (cls) e.className = cls; 
-  return e; 
+function el(tag, cls) {
+  const e = document.createElement(tag);
+  if (cls) e.className = cls;
+  return e;
 }
 
-// ✅ FIXED: Robust alphanumeric WBS normalizer
 function normWBS(w) {
   if (!w) return '';
   let s = String(w).trim().toUpperCase();
@@ -106,7 +106,6 @@ function extractCommessa(parsed, filename) {
   return '';
 }
 
-// ✅ SECURITY: Sanitizza output errori per prevenire DOM XSS
 function showError(msg) {
   const cleanMsg = String(msg).replace(/[<>]/g, '');
   const box = document.getElementById('bnrError');
@@ -132,6 +131,20 @@ function showToast(type, msg) {
   }, 3500);
 }
 
+// ── THEME ─────────────────────────────────────────────────────────────────────
+function applyTheme(theme) {
+  document.body.classList.remove('theme-light', 'theme-dark');
+  if (theme === 'light') document.body.classList.add('theme-light');
+  else if (theme === 'dark') document.body.classList.add('theme-dark');
+  localStorage.setItem('bridge_theme', theme);
+  const btn = document.getElementById('btnTheme');
+  if (btn) btn.textContent = theme === 'light' ? '☀️ Light' : theme === 'dark' ? '🌙 Dark' : '🌓 Auto';
+}
+function cycleTheme() {
+  const cur = localStorage.getItem('bridge_theme') || 'auto';
+  applyTheme(cur === 'auto' ? 'dark' : cur === 'dark' ? 'light' : 'auto');
+}
+
 // ── FILE PARSER ───────────────────────────────────────────────────────────────
 function parseFile(file, key) {
   return new Promise((resolve, reject) => {
@@ -154,7 +167,9 @@ function parseFile(file, key) {
           rows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
         } else {
           const text = new TextDecoder('utf-8').decode(e.target.result);
-          const sep = text.split('\n')[0].includes('\t') ? '\t' : ',';
+          // FIX: detect semicolon separator common in Italian CSV files
+          const line0 = text.split('\n')[0];
+          const sep = line0.includes('\t') ? '\t' : line0.includes(';') ? ';' : ',';
           rows = text.split(/\r?\n/).map(l => l.split(sep).map(c => c.replace(/^"|"$/g, '').trim()));
         }
         if (key === 'p6') { resolve({ data: null, rawRows: rows }); return; }
@@ -202,7 +217,6 @@ document.querySelectorAll('.dz').forEach(dz => {
   inp.addEventListener('change', () => { if(inp.files[0]) handleFile(key, inp.files[0]); });
 });
 
-// ✅ STABILITY: Limite dimensione file (30MB) per evitare OOM del browser
 async function handleFile(key, file) {
   if (file.size > 30 * 1024 * 1024) {
     showError('File troppo grande (>30MB). Il browser potrebbe crashare.');
@@ -245,7 +259,7 @@ function showPreview(key, rawRows, headers) {
   const bodyElement = document.getElementById(`preview-${key}-body`);
   if (headerElement) headerElement.innerHTML = '';
   if (bodyElement) bodyElement.innerHTML = '';
-  
+
   if (headers && headers.length > 0 && headerElement) {
     const headerRow = document.createElement('tr');
     headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; headerRow.appendChild(th); });
@@ -273,7 +287,8 @@ function updatePills() {
     { key: 'budget', pillId: 'pBudget', valId: 'pBudgetV', getCount: d => d.data?.length ?? 0, optional: false },
     { key: 'sil',    pillId: 'pSil',    valId: 'pSilV',    getCount: d => d.data?.length ?? 0, optional: false },
     { key: 'silI',   pillId: 'pSilI',   valId: 'pSilIV',   getCount: d => d.data?.length ?? 0, optional: true  },
-    { key: 'p6',     pillId: 'pP6',     valId: 'pP6V',     getCount: d => d.rawRows?.length ?? 0, optional: false },
+    // FIX: use actual parsed activity count if available, not raw row count
+    { key: 'p6',     pillId: 'pP6',     valId: 'pP6V',     getCount: d => d.actCount ?? (d.rawRows?.length ?? 0), optional: false },
   ];
   let loaded = 0;
   specs.forEach(({ key, pillId, valId, getCount, optional }) => {
@@ -306,7 +321,6 @@ function getF(row, ...cands) {
   return '';
 }
 
-// ✅ CRITICAL FIX: Regex corretta per rimuovere migliaia (.) e convertire decimali (,)
 function getN(row, ...cands) {
   const val = getF(row, ...cands);
   if (!val) return 0;
@@ -378,7 +392,7 @@ function parseP6fromRawRows(rows) {
   const startData = (nextJ.includes('activity id') || nextJ.includes('activity status')) ? hIdx + 2 : hIdx + 1;
 
   const iCode = headers.findIndex(h => /task_code|activity id/i.test(h));
-  const iWbs = headers.findIndex(h => /wbs_id|wbs code/i.test(h));
+  const iWbs  = headers.findIndex(h => /wbs_id|wbs code/i.test(h));
   const iCost = headers.findIndex(h => /act_cost|actual total cost/i.test(h));
   const iPhys = headers.findIndex(h => /phys|% complete/i.test(h));
   const iStat = headers.findIndex(h => /status/i.test(h));
@@ -390,11 +404,11 @@ function parseP6fromRawRows(rows) {
     if (!isDataRow(row) || row.every(c => String(c).trim() === '')) continue;
     const actId = String(row[iCode] ?? '').trim();
     if (!actId) continue;
-    const wbs = normWBS(String(row[iWbs] ?? '').trim());
-    const cost = parseFloat(String(row[iCost] ?? '0').replace(/[^\d.-]/g, '')) || 0;
-    const phys = parseFloat(String(row[iPhys] ?? '0').replace(/[^\d.]/g, '')) || 0;
+    const wbs    = normWBS(String(row[iWbs]  ?? '').trim());
+    const cost   = parseFloat(String(row[iCost] ?? '0').replace(/[^\d.-]/g, '')) || 0;
+    const phys   = parseFloat(String(row[iPhys] ?? '0').replace(/[^\d.]/g, ''))  || 0;
     const status = String(row[iStat] ?? '').trim();
-    const name = String(row[iName] ?? '').trim();
+    const name   = String(row[iName] ?? '').trim();
 
     byAct.set(actId, { actId, wbs, cost, phys, status, name });
     if (!byWbs.has(wbs)) byWbs.set(wbs, []);
@@ -405,31 +419,44 @@ function parseP6fromRawRows(rows) {
   return { byWbs, byAct };
 }
 
-// ── BRIDGE PRINCIPALE (Async/Chunked) ─────────────────────────────────────────
+// ── BRIDGE PRINCIPALE ─────────────────────────────────────────────────────────
 async function runBridge() {
   clearLog();
+  _cancelled = false;
   logMsg('=== Bridge CPM→P6 v16 (Secure) ===');
   if (!S.get('budget') || !S.get('sil') || !S.get('p6')) {
     showToast('err', 'Carica Budget CPM, SIL Diretti e Export P6');
     return;
   }
+
+  const btnCancel = document.getElementById('btnCancel');
+  const btnCalc   = document.getElementById('btnCalc');
+  if (btnCancel) btnCancel.style.display = 'inline-flex';
+  if (btnCalc)   btnCalc.disabled = true;
+
   setProgress(10, 'Parsing budget...');
   const budget = parseBudget(S.get('budget').data);
   await yieldToMain();
-  
+  if (_cancelled) { resetCalcState(); return; }
+
   setProgress(30, 'Parsing SIL...');
   const silDir = parseSIL(S.get('sil').data);
   const silInd = (S.get('silI') && S.get('silI').data) ? parseSIL(S.get('silI').data) : { items: [], latestDate: '' };
   await yieldToMain();
+  if (_cancelled) { resetCalcState(); return; }
 
   setProgress(50, 'Parsing P6...');
   const p6Data = S.get('p6');
   const p6 = p6Data ? parseP6fromRawRows(p6Data.rawRows) : { byWbs: new Map(), byAct: new Map() };
+  // Store real activity count so the pill shows accurate number
+  if (p6Data) { p6Data.actCount = p6.byAct.size; updatePills(); }
   await yieldToMain();
+  if (_cancelled) { resetCalcState(); return; }
 
   logMsg(`Budget: ${budget.byWbs.size} WBS, ${budget.byArt.size} articoli`);
   logMsg(`SIL Diretti: ${silDir.items.length} | Indiretti: ${silInd.items.length}`);
   logMsg(`P6: ${p6.byAct.size} attività, ${p6.byWbs.size} WBS`);
+  if (_manualWbsMap.size > 0) logMsg(`Mapping manuali attivi: ${_manualWbsMap.size}`);
 
   const latestSil = silDir.latestDate > silInd.latestDate ? silDir.latestDate : silInd.latestDate;
   if (latestSil) { const mSil = document.getElementById('mSil'); if(mSil) mSil.textContent = latestSil; }
@@ -444,11 +471,22 @@ async function runBridge() {
     silByArt.get(item.art).rows.push(item);
   });
   await yieldToMain();
+  if (_cancelled) { resetCalcState(); return; }
 
   setProgress(75, 'Mapping Articolo → WBS...');
   const silByWbs = new Map();
   const unmappedArts = [];
   for (const [art, silGrp] of silByArt.entries()) {
+    // Manual override takes priority over budget lookup
+    if (_manualWbsMap.has(art)) {
+      const { wbs, desWbs } = _manualWbsMap.get(art);
+      if (!silByWbs.has(wbs)) silByWbs.set(wbs, { total: 0, desWbs, arts: [] });
+      silByWbs.get(wbs).total += silGrp.total;
+      silByWbs.get(wbs).arts.push({ art, importo: silGrp.total, peso: 1, manual: true });
+      logMsg(`Mapping manuale: "${art}" → ${wbs}`);
+      continue;
+    }
+
     let budgetEntries = budget.byArt.get(art);
     if (!budgetEntries?.length) {
       const prefix = art.substring(0, 8);
@@ -482,6 +520,7 @@ async function runBridge() {
     }
   }
   await yieldToMain();
+  if (_cancelled) { resetCalcState(); return; }
 
   setProgress(85, 'Distribuzione WBS → Activity P6...');
   const distrib = [];
@@ -507,11 +546,12 @@ async function runBridge() {
     });
   }
   await yieldToMain();
+  if (_cancelled) { resetCalcState(); return; }
 
   setProgress(95, 'Calcolo KPI e Alert...');
-  const totalSil = [...silByWbs.values()].reduce((s, v) => s + v.total, 0);
+  const totalSil    = [...silByWbs.values()].reduce((s, v) => s + v.total, 0);
   const totalSilRaw = allSil.reduce((s, i) => s + i.importo, 0);
-  const totalP6 = distrib.reduce((s, d) => s + d.p6Cost, 0);
+  const totalP6     = distrib.reduce((s, d) => s + d.p6Cost, 0);
   const totalBudget = [...budget.byWbs.values()].reduce((s, v) => s + v.total, 0);
   const cpi = totalP6 > 0 ? totalSil / totalP6 : null;
 
@@ -527,7 +567,11 @@ async function runBridge() {
     if (d.silImporto > 0 && d.physPct === 0 && d.status && !d.status.toLowerCase().includes('not started'))
       alerts.push({ type: 'warn', actId: d.actId, wbs: d.wbs, msg: `SIL €${fmt(d.silImporto)} ma % fisica = 0`, method: d.method, actName: d.actName });
   });
-  unmappedArts.forEach(u => alerts.push({ type: 'err', actId: '—', wbs: '—', msg: `Articolo non in Budget: "${u.art}" — €${fmt(u.importo)}`, method: '—', actName: '' }));
+  unmappedArts.forEach(u => alerts.push({
+    type: 'err', actId: '—', wbs: '—',
+    msg: `Articolo non in Budget: "${u.art}" — €${fmt(u.importo)}`,
+    method: '—', actName: '', art: u.art, importo: u.importo, canMap: true
+  }));
   unmappedWbs.forEach(u => alerts.push({ type: 'err', actId: '—', wbs: u.wbs, msg: `WBS "${u.wbs}" non in Export P6 — €${fmt(u.importo)}`, method: '—', actName: '' }));
 
   const threshold = S.threshold || 5000;
@@ -538,7 +582,16 @@ async function runBridge() {
   S.set('result', { distrib, summaryByWbs, alerts, deviazioni, unmappedArts, unmappedWbs, totalSil, totalSilRaw, totalP6, totalBudget, cpi, budget, p6, silByWbs, allSil });
   setProgress(100, 'Completato');
   await yieldToMain();
+  resetCalcState();
   renderResults();
+}
+
+function resetCalcState() {
+  _cancelled = false;
+  const btnCancel = document.getElementById('btnCancel');
+  const btnCalc   = document.getElementById('btnCalc');
+  if (btnCancel) btnCancel.style.display = 'none';
+  if (btnCalc && canCompute()) btnCalc.disabled = false;
 }
 
 function yieldToMain() { return new Promise(r => setTimeout(r, 0)); }
@@ -553,15 +606,13 @@ function setProgress(pct, txt) {
   if (pct >= 100) setTimeout(() => bar.style.display = 'none', 1500);
 }
 
-// ── EXPORT ───────────────────────────────────────────────────────────────────
+// ── EXPORT ────────────────────────────────────────────────────────────────────
 function exportXLSX() {
   const R = S.get('result');
   if (!R || !R.distrib.length) { showToast('err', 'Nessun risultato. Calcola prima il Bridge.'); return; }
   if (typeof XLSX === 'undefined') { showToast('err', 'Libreria XLSX non disponibile.'); return; }
 
   const wb = XLSX.utils.book_new();
-
-  // Distribuzione P6
   const distribData = R.distrib.map(d => ({
     'Activity ID': d.actId, 'Nome Attività': d.actName || '', 'WBS': d.wbs, 'Des. WBS': d.desWbs || '',
     'Metodo': d.method, 'SIL Allocato (€)': +d.silImporto.toFixed(2), 'P6 Costo (€)': +d.p6Cost.toFixed(2),
@@ -569,28 +620,17 @@ function exportXLSX() {
   }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(distribData), 'Distribuzione P6');
 
-  // Riepilogo WBS
   const wbsData = [...R.summaryByWbs.keys()].sort().map(wbs => {
     const s = R.summaryByWbs.get(wbs);
     const bud = R.budget.byWbs.get(wbs);
-    return {
-      'WBS': wbs, 'Des. WBS': s.desWbs || '',
-      'SIL (€)': +s.silTot.toFixed(2), 'P6 Costo (€)': +s.p6Tot.toFixed(2),
-      'Delta (€)': +(s.silTot - s.p6Tot).toFixed(2), 'N. Attività': s.acts,
-      'Budget (€)': bud ? +bud.total.toFixed(2) : ''
-    };
+    return { 'WBS': wbs, 'Des. WBS': s.desWbs || '', 'SIL (€)': +s.silTot.toFixed(2), 'P6 Costo (€)': +s.p6Tot.toFixed(2), 'Delta (€)': +(s.silTot - s.p6Tot).toFixed(2), 'N. Attività': s.acts, 'Budget (€)': bud ? +bud.total.toFixed(2) : '' };
   });
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(wbsData.length ? wbsData : [{ Info: 'Nessun dato' }]), 'Riepilogo WBS');
 
-  // Alert
   const alertData = R.alerts.map(a => ({ 'Tipo': a.type === 'warn' ? 'WARN' : 'ERR', 'Activity ID': a.actId, 'WBS': a.wbs, 'Messaggio': a.msg }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(alertData.length ? alertData : [{ Info: 'Nessun alert' }]), 'Alert');
 
-  // Deviazioni
-  const devData = R.deviazioni.map(d => ({
-    'WBS': d.wbs, 'Activity ID': d.actId, 'Delta (€)': +d.delta.toFixed(2),
-    'Valore Assoluto (€)': +d.absDelta.toFixed(2), '% su P6 Costo': d.pct !== null ? +(d.pct * 100).toFixed(2) : ''
-  }));
+  const devData = R.deviazioni.map(d => ({ 'WBS': d.wbs, 'Activity ID': d.actId, 'Delta (€)': +d.delta.toFixed(2), 'Valore Assoluto (€)': +d.absDelta.toFixed(2), '% su P6 Costo': d.pct !== null ? +(d.pct * 100).toFixed(2) : '' }));
   XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(devData.length ? devData : [{ Info: 'Nessuna deviazione oltre soglia' }]), 'Deviazioni');
 
   const date = new Date().toISOString().substring(0, 10);
@@ -599,11 +639,60 @@ function exportXLSX() {
   showToast('ok', 'Export completato!');
 }
 
+function exportTab(tabId) {
+  const R = S.get('result');
+  if (!R) { showToast('err', 'Nessun risultato da esportare.'); return; }
+  if (typeof XLSX === 'undefined') { showToast('err', 'Libreria XLSX non disponibile.'); return; }
+
+  const date = new Date().toISOString().substring(0, 10);
+  const comm = (document.getElementById('mComm')?.textContent || 'bridge').replace(/[^\w.-]/g, '') || 'bridge';
+  const wb = XLSX.utils.book_new();
+  let sheetName, data, filename;
+
+  if (tabId === 'riepilogo') {
+    sheetName = 'Riepilogo WBS'; filename = `RiepilogoWBS_${comm}_${date}.xlsx`;
+    data = [...R.summaryByWbs.keys()].sort().map(wbs => {
+      const s = R.summaryByWbs.get(wbs); const bud = R.budget.byWbs.get(wbs);
+      return { 'WBS': wbs, 'Des. WBS': s.desWbs || '', 'SIL (€)': +s.silTot.toFixed(2), 'P6 Costo (€)': +s.p6Tot.toFixed(2), 'Delta (€)': +(s.silTot - s.p6Tot).toFixed(2), 'N. Attività': s.acts, 'Budget (€)': bud ? +bud.total.toFixed(2) : '' };
+    });
+  } else if (tabId === 'distrib') {
+    sheetName = 'Distribuzione P6'; filename = `DistribuzioneP6_${comm}_${date}.xlsx`;
+    data = R.distrib.map(d => ({ 'Activity ID': d.actId, 'Nome Attività': d.actName || '', 'WBS': d.wbs, 'Metodo': d.method, 'SIL Allocato (€)': +d.silImporto.toFixed(2), 'P6 Costo (€)': +d.p6Cost.toFixed(2), 'Phys%': +(d.physPct || 0).toFixed(2), 'Delta (€)': +d.delta.toFixed(2) }));
+  } else if (tabId === 'alert') {
+    sheetName = 'Alert'; filename = `Alert_${comm}_${date}.xlsx`;
+    data = R.alerts.map(a => ({ 'Tipo': a.type === 'warn' ? 'WARN' : 'ERR', 'Activity ID': a.actId, 'WBS': a.wbs, 'Messaggio': a.msg }));
+  } else if (tabId === 'deviazioni') {
+    sheetName = 'Deviazioni'; filename = `Deviazioni_${comm}_${date}.xlsx`;
+    data = R.deviazioni.map(d => ({ 'WBS': d.wbs, 'Activity ID': d.actId, 'Delta (€)': +d.delta.toFixed(2), 'Valore Assoluto (€)': +d.absDelta.toFixed(2), '% su P6 Costo': d.pct !== null ? +(d.pct * 100).toFixed(2) : '' }));
+  } else { return; }
+
+  XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(data.length ? data : [{ Info: 'Nessun dato' }]), sheetName);
+  XLSX.writeFile(wb, filename);
+  showToast('ok', `Export "${sheetName}" completato!`);
+}
+
+// ── TABLE SORTING ─────────────────────────────────────────────────────────────
+function sortTable(table, colIdx, asc) {
+  const tbody = table.querySelector('tbody');
+  const totalRow = tbody.querySelector('.r-total');
+  const rows = Array.from(tbody.querySelectorAll('tr:not(.r-total)'));
+  rows.sort((a, b) => {
+    const at = a.cells[colIdx]?.textContent.trim() || '';
+    const bt = b.cells[colIdx]?.textContent.trim() || '';
+    const an = parseFloat(at.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.'));
+    const bn = parseFloat(bt.replace(/[^\d,.-]/g, '').replace(/\./g, '').replace(',', '.'));
+    if (!isNaN(an) && !isNaN(bn)) return asc ? an - bn : bn - an;
+    return asc ? at.localeCompare(bt, 'it') : bt.localeCompare(at, 'it');
+  });
+  rows.forEach(r => tbody.appendChild(r));
+  if (totalRow) tbody.appendChild(totalRow);
+}
+
 // ── RENDER ────────────────────────────────────────────────────────────────────
 function renderResults() {
   const R = S.get('result');
   if (!R) return;
-  
+
   const cpiEl = document.getElementById('pCpiV');
   if(cpiEl) cpiEl.textContent = R.cpi ? R.cpi.toFixed(3) : '—';
   const cpiPill = document.getElementById('pCpi');
@@ -624,13 +713,13 @@ function renderResults() {
 
   ['f1','f2','f3','f4','f5','f6'].forEach(id => document.getElementById(id)?.classList.remove('done','warn'));
   if (S.get('budget')) document.getElementById('f1')?.classList.add('done');
-  if (S.get('sil')) document.getElementById('f2')?.classList.add('done');
-  if (S.get('silI')) document.getElementById('f3')?.classList.add('done'); else document.getElementById('f3')?.classList.add('warn');
-  if (S.get('p6')) document.getElementById('f4')?.classList.add('done');
+  if (S.get('sil'))    document.getElementById('f2')?.classList.add('done');
+  if (S.get('silI'))   document.getElementById('f3')?.classList.add('done'); else document.getElementById('f3')?.classList.add('warn');
+  if (S.get('p6'))     document.getElementById('f4')?.classList.add('done');
   document.getElementById('f5')?.classList.add('done');
   document.getElementById('f6')?.classList.add(R.alerts.length > 0 ? 'warn' : 'done');
 
-  const out = document.getElementById('outArea'); 
+  const out = document.getElementById('outArea');
   if (!out) return;
   out.innerHTML = '';
 
@@ -654,21 +743,22 @@ function renderResults() {
   if(tabCard.querySelector('.card-head')) tabCard.querySelector('.card-head').style.display = 'none';
   const tabs = buildTabs([
     { label: 'Riepilogo WBS', id: 'riepilogo' },
-    { label: 'Distribuzione P6 ', id: 'distrib', count: R.distrib.length, tnClass: 'tn-bri' },
-    { label: 'Alert ', id: 'alert', count: R.alerts.length, tnClass: 'tn-alert' },
-    { label: 'Deviazioni ', id: 'deviazioni', count: R.deviazioni.length, tnClass: 'tn-dev' },
+    { label: 'Distribuzione P6', id: 'distrib', count: R.distrib.length, tnClass: 'tn-bri' },
+    { label: 'Alert', id: 'alert', count: R.alerts.length, tnClass: 'tn-alert' },
+    { label: 'Deviazioni', id: 'deviazioni', count: R.deviazioni.length, tnClass: 'tn-dev' },
     { label: '📄 Log', id: 'log' }
   ]);
   tabCard.appendChild(tabs);
   const tcWrap = el('div', '');
 
-  // RIEPILOGO
+  // ── RIEPILOGO
   const tcR = el('div', 'tc card-body active'); tcR.id = 'tc-riepilogo';
   const wbsKeys = [...R.summaryByWbs.keys()].sort();
   if (!wbsKeys.length) { tcR.innerHTML = '<div class="empty"><div class="e-ico">📬</div><div class="e-title">Nessun dato</div></div>'; }
   else {
+    tcR.appendChild(buildTabToolbar('Riepilogo WBS', () => exportTab('riepilogo')));
     const scr = el('div', 'card-scroll');
-    const t = buildTable(['WBS', 'Des. WBS', 'SIL (€)', 'P6 Costo (€)', 'Delta (€)', 'N. Att.', 'Budget (€)', 'Status']);
+    const t = buildTable(['WBS', 'Des. WBS', 'SIL (€)', 'P6 Costo (€)', 'Delta (€)', 'N. Att.', 'Budget (€)', 'Status'], true);
     const tb = t.querySelector('tbody');
     let tS = 0, tP = 0;
     wbsKeys.forEach(wbs => {
@@ -676,7 +766,10 @@ function renderResults() {
       const bud = R.budget.byWbs.get(wbs);
       const delta = s.silTot - s.p6Tot;
       tS += s.silTot; tP += s.p6Tot;
-      const statusTag = delta === 0 ? {__html:'<span class="tag tag-ok">OK</span>'} : delta > 0 ? {__html:'<span class="tag tag-warn">SIL &gt;P6</span>'} : {__html:'<span class="tag tag-err">P6 &gt;SIL</span>'};
+      const statusTag = delta === 0
+        ? {__html:'<span class="tag tag-ok">OK</span>'}
+        : delta > 0 ? {__html:'<span class="tag tag-warn">SIL &gt;P6</span>'}
+                    : {__html:'<span class="tag tag-err">P6 &gt;SIL</span>'};
       tb.appendChild(buildRow([wbs, s.desWbs || '—', fmtE(s.silTot), fmtE(s.p6Tot), fmtDelta(delta), s.acts, bud ? fmtE(bud.total) : '—', statusTag], delta > 0 ? 'r-over' : delta < 0 ? 'r-miss' : 'r-ok'));
     });
     R.unmappedWbs.forEach(u => {
@@ -687,43 +780,71 @@ function renderResults() {
   }
   tcWrap.appendChild(tcR);
 
-  // DISTRIBUZIONE
+  // ── DISTRIBUZIONE (with search filter)
   const tcD = el('div', 'tc card-body'); tcD.id = 'tc-distrib';
   if (!R.distrib.length) { tcD.innerHTML = '<div class="empty"><div class="e-ico">📬</div><div class="e-title">Nessuna attività</div></div>'; }
   else {
+    tcD.appendChild(buildTabToolbar('Distribuzione P6', () => exportTab('distrib')));
+    const searchInp = el('input', 'tab-search');
+    searchInp.type = 'text';
+    searchInp.placeholder = '🔍 Cerca Activity ID, WBS, nome attività...';
+    tcD.appendChild(searchInp);
     const scr = el('div', 'card-scroll');
-    const t = buildTable(['Activity ID', 'Nome Attività', 'WBS', 'Des. WBS', 'Metodo', 'SIL Alloc. (€)', 'P6 Costo (€)', 'Phys%', 'Status', 'Delta (€)']);
+    const t = buildTable(['Activity ID', 'Nome Attività', 'WBS', 'Des. WBS', 'Metodo', 'SIL Alloc. (€)', 'P6 Costo (€)', 'Phys%', 'Status', 'Delta (€)'], true);
     const tb = t.querySelector('tbody');
     R.distrib.forEach(d => {
       const mtTag = d.method === 'COST' ? {__html:'<span class="tag tag-ok">COST</span>'} : d.method === 'PHY' ? {__html:'<span class="tag tag-phy">PHY</span>'} : {__html:'<span class="tag tag-eq">EQ</span>'};
       tb.appendChild(buildRow([d.actId, d.actName || '—', d.wbs, d.desWbs || '—', mtTag, fmtE(d.silImporto), fmtE(d.p6Cost), (d.physPct || 0).toFixed(1) + '%', d.status || '—', fmtDelta(d.delta)], d.method === 'COST' ? 'r-ok' : 'r-bri'));
     });
     scr.appendChild(t); tcD.appendChild(scr);
+    searchInp.addEventListener('input', () => {
+      const q = searchInp.value.toLowerCase();
+      t.querySelectorAll('tbody tr').forEach(tr => {
+        tr.style.display = !q || tr.textContent.toLowerCase().includes(q) ? '' : 'none';
+      });
+    });
   }
   tcWrap.appendChild(tcD);
 
-  // ALERT & DEVIAZIONI (Placeholder rendering sicuro)
+  // ── ALERT (with manual WBS assignment button)
   const tcA = el('div', 'tc card-body'); tcA.id = 'tc-alert';
   if (!R.alerts.length) { tcA.innerHTML = '<div class="empty">✅ Nessun alert</div>'; }
   else {
-    const t = buildTable(['Tipo', 'Activity ID', 'WBS', 'Messaggio']);
+    tcA.appendChild(buildTabToolbar('Alert', () => exportTab('alert')));
+    const t = buildTable(['Tipo', 'Activity ID', 'WBS', 'Messaggio', '']);
     const tb = t.querySelector('tbody');
-    R.alerts.forEach(a => tb.appendChild(buildRow([a.type === 'warn' ? '⚠️' : '🚨', a.actId, a.wbs, a.msg], a.type === 'warn' ? 'r-over' : 'r-miss')));
-    tcA.appendChild(el('div','card-scroll')).appendChild(t);
+    R.alerts.forEach(a => {
+      const isAlreadyMapped = a.canMap && _manualWbsMap.has(a.art);
+      const actionCell = a.canMap
+        ? { __html: isAlreadyMapped
+            ? `<button class="btn-map-art applied" disabled>✓ ${_manualWbsMap.get(a.art).wbs}</button>`
+            : `<button class="btn-map-art" data-art="${String(a.art).replace(/"/g,'&quot;')}" data-imp="${a.importo}">🔗 Assegna WBS</button>`
+          }
+        : '';
+      tb.appendChild(buildRow([a.type === 'warn' ? '⚠️' : '🚨', a.actId, a.wbs, a.msg, actionCell], a.type === 'warn' ? 'r-over' : 'r-miss'));
+    });
+    const scrollWrap = el('div', 'card-scroll');
+    scrollWrap.appendChild(t);
+    tcA.appendChild(scrollWrap);
+    tcA.querySelectorAll('.btn-map-art:not([disabled])').forEach(btn => {
+      btn.addEventListener('click', () => openManualMapModal(btn.dataset.art, parseFloat(btn.dataset.imp), R.p6.byWbs));
+    });
   }
   tcWrap.appendChild(tcA);
 
+  // ── DEVIAZIONI
   const tcDev = el('div', 'tc card-body'); tcDev.id = 'tc-deviazioni';
   if (!R.deviazioni.length) { tcDev.innerHTML = '<div class="empty">✅ Deviazioni nella soglia</div>'; }
   else {
-    const t = buildTable(['WBS', 'Activity ID', 'Delta (€)', 'Abs (€)', '%']);
+    tcDev.appendChild(buildTabToolbar('Deviazioni', () => exportTab('deviazioni')));
+    const t = buildTable(['WBS', 'Activity ID', 'Delta (€)', 'Abs (€)', '%'], true);
     const tb = t.querySelector('tbody');
     R.deviazioni.forEach(d => tb.appendChild(buildRow([d.wbs, d.actId, fmtDelta(d.delta), '€'+fmt(d.absDelta), d.pct ? (d.pct*100).toFixed(1)+'%' : '—'])));
     tcDev.appendChild(el('div','card-scroll')).appendChild(t);
   }
   tcWrap.appendChild(tcDev);
 
-  // LOG
+  // ── LOG
   const tcLog = el('div', 'tc card-body'); tcLog.id = 'tc-log';
   const logBox = el('div', 'log-box');
   logBox.textContent = _log.join('\n');
@@ -733,7 +854,6 @@ function renderResults() {
   out.appendChild(tabCard);
   out.appendChild(tcWrap);
 
-  // Tab switching delegation
   tabCard.querySelectorAll('.tab').forEach(btn => {
     btn.addEventListener('click', () => {
       tabCard.querySelectorAll('.tab').forEach(b => b.classList.remove('active'));
@@ -744,13 +864,20 @@ function renderResults() {
       });
     });
   });
-
-  // Attach to DOM safely
-  const container = document.getElementById('container');
-  if (container) container.appendChild(out);
 }
 
 // ── SAFE DOM BUILDERS ─────────────────────────────────────────────────────────
+function buildTabToolbar(title, onExport) {
+  const bar = el('div', 'tab-toolbar');
+  const lbl = el('span', 'tab-toolbar-lbl'); lbl.textContent = title;
+  bar.appendChild(lbl);
+  const btn = el('button', 'btn btn-ghost btn-xs');
+  btn.textContent = '⬇ Esporta';
+  btn.addEventListener('click', onExport);
+  bar.appendChild(btn);
+  return bar;
+}
+
 function buildTabs(defs) {
   const wrap = el('div', 'tabs');
   defs.forEach(({ label, id, count, tnClass }, idx) => {
@@ -781,11 +908,26 @@ function makeKpi(val, label, status) {
   kpi.appendChild(v); kpi.appendChild(l);
   return kpi;
 }
-function buildTable(headers) {
+function buildTable(headers, sortable) {
   const table = document.createElement('table');
   const thead = document.createElement('thead');
   const tr = document.createElement('tr');
-  headers.forEach(h => { const th = document.createElement('th'); th.textContent = h; tr.appendChild(th); });
+  headers.forEach((h, idx) => {
+    const th = document.createElement('th');
+    th.textContent = h;
+    if (sortable && h) {
+      th.classList.add('th-sort');
+      th.title = 'Clicca per ordinare';
+      let asc = true;
+      th.addEventListener('click', () => {
+        thead.querySelectorAll('th').forEach(t => t.classList.remove('sort-asc', 'sort-desc'));
+        th.classList.add(asc ? 'sort-asc' : 'sort-desc');
+        sortTable(table, idx, asc);
+        asc = !asc;
+      });
+    }
+    tr.appendChild(th);
+  });
   thead.appendChild(tr); table.appendChild(thead);
   table.appendChild(document.createElement('tbody'));
   return table;
@@ -795,14 +937,52 @@ function buildRow(cells, cls) {
   if (cls) tr.className = cls;
   cells.forEach(c => {
     const td = document.createElement('td');
-    if (c !== null && typeof c === 'object' && c.__html) {
-      td.innerHTML = c.__html;
-    } else {
-      td.textContent = c ?? '';
-    }
+    if (c !== null && typeof c === 'object' && c.__html) { td.innerHTML = c.__html; }
+    else { td.textContent = c ?? ''; }
     tr.appendChild(td);
   });
   return tr;
+}
+
+// ── MANUAL WBS MAPPING ────────────────────────────────────────────────────────
+function openManualMapModal(art, importo, p6ByWbs) {
+  const modal = document.getElementById('manualMapModal');
+  if (!modal) return;
+  const artEl = modal.querySelector('#mmArt');
+  const impEl = modal.querySelector('#mmImp');
+  const sel   = modal.querySelector('#mmWbsSelect');
+  if (artEl) artEl.textContent = art;
+  if (impEl) impEl.textContent = '€ ' + fmtE(importo);
+  if (sel) {
+    sel.innerHTML = '';
+    const opt0 = document.createElement('option');
+    opt0.value = ''; opt0.textContent = '— Seleziona WBS —';
+    sel.appendChild(opt0);
+    [...p6ByWbs.keys()].sort().forEach(wbs => {
+      const opt = document.createElement('option');
+      opt.value = wbs; opt.textContent = wbs;
+      if (_manualWbsMap.has(art) && _manualWbsMap.get(art).wbs === wbs) opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+  modal.dataset.art = art;
+  modal.style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+}
+function closeManualMapModal() {
+  const modal = document.getElementById('manualMapModal');
+  if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
+}
+function applyManualMap() {
+  const modal = document.getElementById('manualMapModal');
+  if (!modal) return;
+  const art = modal.dataset.art;
+  const wbs = modal.querySelector('#mmWbsSelect')?.value;
+  if (!wbs) { showToast('warn', 'Seleziona una WBS prima di confermare.'); return; }
+  _manualWbsMap.set(art, { wbs, desWbs: '' });
+  closeManualMapModal();
+  showToast('ok', `Mapping: "${art}" → ${wbs}. Ricalcolo in corso...`);
+  setTimeout(() => runBridge(), 50);
 }
 
 // ── DOCS MODAL ────────────────────────────────────────────────────────────────
@@ -864,7 +1044,6 @@ function mdToHtml(md) {
     } else if (inList) { out += '</ul>'; inList = false; }
 
     if (line === '') { continue; }
-
     out += `<p>${inl(line)}</p>`;
   }
   flush();
@@ -872,8 +1051,8 @@ function mdToHtml(md) {
 }
 
 function openDoc(key) {
-  const rawEl = document.getElementById(key === 'manuale' ? 'raw-manuale' : 'raw-config');
-  const modal  = document.getElementById('docModal');
+  const rawEl   = document.getElementById(key === 'manuale' ? 'raw-manuale' : 'raw-config');
+  const modal   = document.getElementById('docModal');
   const titleEl = document.getElementById('docModalTitle');
   const bodyEl  = document.getElementById('docModalBody');
   if (!rawEl || !modal || !bodyEl) return;
@@ -883,7 +1062,6 @@ function openDoc(key) {
   document.body.style.overflow = 'hidden';
   modal.focus();
 }
-
 function closeDoc() {
   const modal = document.getElementById('docModal');
   if (modal) { modal.style.display = 'none'; document.body.style.overflow = ''; }
@@ -891,12 +1069,20 @@ function closeDoc() {
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 window.addEventListener('DOMContentLoaded', () => {
-  const btnCalc = document.getElementById('btnCalc');
-  const btnReset = document.getElementById('btnReset');
-  if(btnCalc) btnCalc.addEventListener('click', runBridge);
-  if(btnReset) btnReset.addEventListener('click', () => {
-    S.reset();
-    S.cleanup();
+  applyTheme(localStorage.getItem('bridge_theme') || 'auto');
+
+  const btnCalc   = document.getElementById('btnCalc');
+  const btnReset  = document.getElementById('btnReset');
+  const btnCancel = document.getElementById('btnCancel');
+  const btnTheme  = document.getElementById('btnTheme');
+
+  if (btnCalc)   btnCalc.addEventListener('click', runBridge);
+  if (btnTheme)  btnTheme.addEventListener('click', cycleTheme);
+  if (btnCancel) btnCancel.addEventListener('click', () => { _cancelled = true; showToast('warn', 'Calcolo annullato.'); });
+
+  if (btnReset) btnReset.addEventListener('click', () => {
+    S.reset(); S.cleanup();
+    _manualWbsMap.clear();
     document.querySelectorAll('.dz').forEach(d => d.classList.remove('loaded'));
     document.querySelectorAll('input[type=file]').forEach(i => i.value = '');
     document.querySelectorAll('.dz-info').forEach(i => i.textContent = '');
@@ -904,23 +1090,39 @@ window.addEventListener('DOMContentLoaded', () => {
     const outArea = document.getElementById('outArea');
     if (outArea) outArea.innerHTML = '<div class="empty"><div class="e-ico">🔗</div><div class="e-title">Stato resettato</div><div class="e-desc">Carica i file per avviare una nuova elaborazione.</div></div>';
     document.getElementById('btnExpHdr')?.classList.remove('show');
-    const btnCalc = document.getElementById('btnCalc');
     if (btnCalc) btnCalc.disabled = true;
     ['bnrUnmapped','bnrOk'].forEach(id => document.getElementById(id)?.classList.remove('show'));
     document.getElementById('bnrNoBudget')?.classList.add('show');
     ['f1','f2','f3','f4','f5','f6'].forEach(id => document.getElementById(id)?.classList.remove('done','warn','out'));
     const mComm = document.getElementById('mComm'); if(mComm) mComm.textContent = '—';
-    const mSil = document.getElementById('mSil'); if(mSil) mSil.textContent = '—';
-    clearLog();
-    updatePills();
+    const mSil  = document.getElementById('mSil');  if(mSil)  mSil.textContent  = '—';
+    clearLog(); updatePills();
     showToast('info', 'Stato resettato');
   });
+
   document.getElementById('btnExpHdr')?.addEventListener('click', exportXLSX);
   document.getElementById('btnDocManuale')?.addEventListener('click', () => openDoc('manuale'));
   document.getElementById('btnDocConfig')?.addEventListener('click',  () => openDoc('config'));
   document.getElementById('docModalClose')?.addEventListener('click', closeDoc);
   document.getElementById('docModal')?.addEventListener('click', e => { if (e.target.id === 'docModal') closeDoc(); });
-  document.addEventListener('keydown', e => { if (e.key === 'Escape' && document.getElementById('docModal')?.style.display !== 'none') closeDoc(); });
+
+  // Manual map modal wiring
+  document.getElementById('mmClose')?.addEventListener('click',   closeManualMapModal);
+  document.getElementById('mmCancel')?.addEventListener('click',  closeManualMapModal);
+  document.getElementById('mmConfirm')?.addEventListener('click', applyManualMap);
+  document.getElementById('manualMapModal')?.addEventListener('click', e => { if (e.target.id === 'manualMapModal') closeManualMapModal(); });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') {
+      if (document.getElementById('docModal')?.style.display !== 'none') closeDoc();
+      if (document.getElementById('manualMapModal')?.style.display !== 'none') closeManualMapModal();
+    }
+    // Ctrl/Cmd+Enter → avvia calcolo
+    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') {
+      if (btnCalc && !btnCalc.disabled) btnCalc.click();
+    }
+  });
 
   logMsg('App inizializzata. Modalità client-side sicura attiva.');
 });

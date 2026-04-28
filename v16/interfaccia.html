@@ -23,6 +23,7 @@
           <div class="ml">Ultimo SIL</div>
           <div class="mv" id="mSil">—</div>
         </div>
+        <button id="btnTheme" class="btn-doc" aria-label="Cambia tema">🌓 Auto</button>
         <button id="btnDocManuale" class="btn-doc" aria-label="Apri manuale utente">📖 Manuale</button>
         <button id="btnDocConfig" class="btn-doc" aria-label="Apri configurazione tecnica">⚙️ Config</button>
         <button id="btnExpHdr" class="btn-exp-hdr" aria-label="Esporta rapidamente risultato finale">⬇ Esporta Finale</button>
@@ -74,7 +75,7 @@
           <table class="preview-table"><thead id="preview-budget-header"></thead><tbody id="preview-budget-body"></tbody></table>
         </div>
 
-        <div class="inp-label">Dati CPM ESSENZIALE</div>
+        <div class="inp-label">Dati SIL ESSENZIALE</div>
         <div class="dz" id="dz-sil" data-key="sil" tabindex="0" role="button" aria-label="Carica SIL Diretti">
           <div class="dz-ico">📊</div>
           <div class="dz-body">
@@ -125,6 +126,7 @@
         <hr class="sep">
         <div class="btn-row">
           <button id="btnCalc" class="btn btn-primary" disabled aria-label="Avvia calcolo bridge">▶ Calcola Bridge</button>
+          <button id="btnCancel" class="btn btn-ghost" aria-label="Annulla calcolo" style="display:none">✕ Annulla</button>
           <button id="btnReset" class="btn btn-ghost" aria-label="Resetta tutto">↻ Reset</button>
         </div>
       </section>
@@ -147,6 +149,34 @@
   </main>
 
   <div id="toast" class="toast" role="alert" aria-live="assertive"></div>
+
+  <!-- MODAL MAPPING MANUALE WBS -->
+  <div id="manualMapModal" class="mmap-overlay" style="display:none" role="dialog" aria-modal="true" tabindex="-1">
+    <div class="mmap-box">
+      <div class="mmap-hdr">
+        <span class="mmap-hdr-title">🔗 Assegna WBS manualmente</span>
+        <button class="doc-close" id="mmClose" aria-label="Chiudi">✕</button>
+      </div>
+      <div class="mmap-body">
+        <div class="mmap-row">
+          <div class="mmap-label">Articolo SIL non trovato in Budget</div>
+          <div class="mmap-val" id="mmArt"></div>
+        </div>
+        <div class="mmap-row">
+          <div class="mmap-label">Importo SIL</div>
+          <div class="mmap-val" id="mmImp"></div>
+        </div>
+        <div class="mmap-row">
+          <div class="mmap-label">WBS P6 di destinazione</div>
+          <select id="mmWbsSelect" class="mmap-select" aria-label="Seleziona WBS"></select>
+        </div>
+      </div>
+      <div class="mmap-footer">
+        <button id="mmCancel" class="btn btn-ghost">Annulla</button>
+        <button id="mmConfirm" class="btn btn-primary">✓ Applica e Ricalcola</button>
+      </div>
+    </div>
+  </div>
 
   <!-- MODAL DOCUMENTAZIONE -->
   <div id="docModal" class="doc-overlay" style="display:none" role="dialog" aria-modal="true" aria-labelledby="docModalTitle" tabindex="-1">
