@@ -540,9 +540,10 @@ class App(ctk.CTk):
         )
         self._kpi_cumul.configure(
             text=f"Cumulativo 1→{sil_cur}:  €{tot_cum:>13,.0f}"
+            
         )
 
-
+#PAPERELLE
 # ══════════════════════════════════════════════════════════════════════════════
 if __name__ == "__main__":
     app = App()
