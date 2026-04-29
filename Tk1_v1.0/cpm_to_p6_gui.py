@@ -208,12 +208,18 @@ class App(ctk.CTk):
         ctk.CTkButton(
             top_bar, text="Pulisci", width=80, height=28,
             fg_color="transparent", border_width=1,
+            border_color=("gray60", "gray40"),
+            text_color=("gray10", "gray90"),
+            hover_color=("gray80", "gray30"),
             command=self._clear_log,
         ).pack(side="right", padx=(4, 0))
 
         self._btn_open_folder = ctk.CTkButton(
             top_bar, text="Apri cartella output", width=150, height=28,
             fg_color="transparent", border_width=1,
+            border_color=("gray60", "gray40"),
+            text_color=("gray10", "gray90"),
+            hover_color=("gray80", "gray30"),
             command=self._open_output_folder,
             state="disabled",
         )
@@ -222,6 +228,9 @@ class App(ctk.CTk):
         self._btn_open_csv = ctk.CTkButton(
             top_bar, text="Apri CSV", width=80, height=28,
             fg_color="transparent", border_width=1,
+            border_color=("gray60", "gray40"),
+            text_color=("gray10", "gray90"),
+            hover_color=("gray80", "gray30"),
             command=self._open_csv,
             state="disabled",
         )
