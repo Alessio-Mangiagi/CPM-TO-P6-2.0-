@@ -7,19 +7,17 @@ Avvio: python cpm_to_p6_gui.py
 import io
 import os
 import sys
-import csv
-import shutil
 import threading
-import subprocess
 from pathlib import Path
 from tkinter import filedialog, messagebox
 
 import customtkinter as ctk
 
-# ── Import logica core ────────────────────────────────────────────────────────
+# ── Import logica core e controller ──────────────────────────────────────────
 _HERE = Path(__file__).parent
 sys.path.insert(0, str(_HERE))
 import cpm_to_p6 as core
+from cpm_to_p6_controller import AppController
 
 # ── Tema e aspetto ────────────────────────────────────────────────────────────
 ctk.set_appearance_mode("dark")
@@ -81,6 +79,7 @@ class App(ctk.CTk):
         self._last_csv: Path | None = None
 
         self._build_ui()
+        self._ctrl = AppController(self)
         self._apply_file(str(DEFAULT_FILE))
 
     # ── Layout ────────────────────────────────────────────────────────────────
@@ -376,43 +375,7 @@ class App(ctk.CTk):
         if not params:
             return
         wb_path, sil = params
-        self._run_in_thread(self._do_analizza, wb_path, sil)
-
-    def _do_analizza(self, wb_path: Path, sil: int):
-        self.after(0, lambda: self._set_status("Analisi in corso…"))
-        wbs_to_acts, wbs_to_des, wbs_to_tipo, art_to_cost, act_info, sil_records, sil_max = \
-            core._load_all(wb_path)
-
-        self._sil_max = sil_max
-        self.after(0, lambda: self._sil_info.configure(text=f"max disponibile: {sil_max}"))
-
-        sil_cur = min(sil, sil_max)
-        self.after(0, lambda: self._sil_var.set(str(sil_cur)))
-
-        print(f"  SIL corrente: {sil_cur}")
-        print("  Generazione BRIDGE_SIL in memoria …")
-        bridge = core.generate_bridge(
-            sil_records, wbs_to_acts, wbs_to_des, wbs_to_tipo, act_info, art_to_cost
-        )
-        print(f"  → {len(bridge)} righe BRIDGE_SIL generate\n")
-
-        core.show_riepilogo(sil_records, bridge)
-        core.show_alert(bridge, act_info, sil_cur)
-
-        # KPI sidebar
-        tot_per  = sum(r[9] for r in bridge if int(r[0]) == sil_cur)
-        tot_cum  = sum(r[9] for r in bridge)
-        quadra   = all(
-            abs(sum(r[9] for r in bridge if str(r[2]) == w) -
-                sum(rec["imp"] for rec in sil_records if rec["wbs"] == w)) <= 1.0
-            for w in {str(r[2]) for r in bridge}
-        )
-        chk = "✓ QUADRA" if quadra else "⚠ NON QUADRA"
-        self.after(0, lambda: self._update_kpi(chk, tot_per, tot_cum, sil_cur, quadra))
-        self.after(0, lambda: self._set_status(
-            f"Analisi completata — SIL {sil_cur}  |  Tot cumulativo: €{tot_cum:,.0f}",
-            OK_COLOR if quadra else WARN_COLOR,
-        ))
+        self._run_in_thread(self._ctrl.do_analizza, wb_path, sil)
 
     def _run_rigenera(self):
         params = self._get_params()
@@ -426,52 +389,7 @@ class App(ctk.CTk):
             f"Verrà creato un backup automatico.\nContinuare?",
         ):
             return
-        self._run_in_thread(self._do_rigenera, wb_path, sil)
-
-    def _do_rigenera(self, wb_path: Path, sil: int):
-        self.after(0, lambda: self._set_status("Rigenerazione in corso…"))
-        from openpyxl import load_workbook as lw
-
-        wbs_to_acts, wbs_to_des, wbs_to_tipo, art_to_cost, act_info, sil_records, sil_max = \
-            core._load_all(wb_path)
-
-        self._sil_max = sil_max
-        self.after(0, lambda: self._sil_info.configure(text=f"max disponibile: {sil_max}"))
-
-        sil_cur = min(sil, sil_max)
-
-        print("  Generazione BRIDGE_SIL …")
-        bridge = core.generate_bridge(
-            sil_records, wbs_to_acts, wbs_to_des, wbs_to_tipo, act_info, art_to_cost
-        )
-        print(f"  → {len(bridge)} righe\n")
-
-        print("  Generazione P6_IMPORT_PULITO …")
-        p6_import = core.generate_p6_import(bridge, sil_cur, act_info)
-        print(f"  → {len(p6_import)} attività\n")
-
-        backup = wb_path.with_stem(wb_path.stem + "_BACKUP")
-        shutil.copy2(wb_path, backup)
-        print(f"  Backup: {backup.name}")
-
-        print(f"  Apertura Excel in scrittura …")
-        wb = lw(str(wb_path))
-        core._write_bridge(wb["BRIDGE_SIL"], bridge)
-        core._write_p6_import(wb["P6_IMPORT_PULITO"], p6_import, sil_cur, sil_max)
-        wb.save(str(wb_path))
-        print(f"  ✓ Salvato: {wb_path.name}\n")
-
-        core.show_riepilogo(sil_records, bridge)
-        core.show_alert(bridge, act_info, sil_cur)
-
-        tot_per = sum(r[9] for r in bridge if int(r[0]) == sil_cur)
-        tot_cum = sum(r[9] for r in bridge)
-        quadra = True
-        self.after(0, lambda: self._update_kpi("✓ Rigenera OK", tot_per, tot_cum, sil_cur, quadra))
-        self.after(0, lambda: self._set_status(
-            f"Bridge rigenerato — {wb_path.name}", OK_COLOR
-        ))
-        self.after(0, lambda: self._btn_open_folder.configure(state="normal"))
+        self._run_in_thread(self._ctrl.do_rigenera, wb_path, sil)
 
     def _run_export(self):
         params = self._get_params()
@@ -489,44 +407,7 @@ class App(ctk.CTk):
         if not out_path:
             return
         self._last_csv = Path(out_path)
-        self._run_in_thread(self._do_export, wb_path, sil, Path(out_path))
-
-    def _do_export(self, wb_path: Path, sil: int, out_path: Path):
-        self.after(0, lambda: self._set_status("Export in corso…"))
-        wbs_to_acts, wbs_to_des, wbs_to_tipo, art_to_cost, act_info, sil_records, sil_max = \
-            core._load_all(wb_path)
-
-        self._sil_max = sil_max
-        self.after(0, lambda: self._sil_info.configure(text=f"max disponibile: {sil_max}"))
-
-        sil_cur = min(sil, sil_max)
-
-        print("  Generazione BRIDGE_SIL …")
-        bridge = core.generate_bridge(
-            sil_records, wbs_to_acts, wbs_to_des, wbs_to_tipo, act_info, art_to_cost
-        )
-        print("  Generazione P6_IMPORT_PULITO …")
-        p6_import = core.generate_p6_import(bridge, sil_cur, act_info)
-
-        with open(out_path, "w", newline="", encoding="utf-8-sig") as f:
-            writer = csv.writer(f)
-            writer.writerow(core.P6_IMPORT_HEADERS)
-            writer.writerows(p6_import)
-
-        tot_per = sum(r[2] for r in p6_import)
-        tot_cum = sum(r[3] for r in p6_import)
-
-        print(f"\n  ✓ CSV esportato ({len(p6_import)} righe):")
-        print(f"    {out_path}")
-        print(f"\n  Periodo  SIL {sil_cur}:      € {tot_per:>15,.2f}")
-        print(f"  Cumulativo SIL 1→{sil_cur}:  € {tot_cum:>15,.2f}")
-
-        self.after(0, lambda: self._update_kpi(
-            f"✓ CSV SIL {sil_cur}", tot_per, tot_cum, sil_cur, True
-        ))
-        self.after(0, lambda: self._set_status(f"CSV esportato → {out_path.name}", OK_COLOR))
-        self.after(0, lambda: self._btn_open_csv.configure(state="normal"))
-        self.after(0, lambda: self._btn_open_folder.configure(state="normal"))
+        self._run_in_thread(self._ctrl.do_export, wb_path, sil, Path(out_path))
 
     # ── Aggiorna KPI sidebar ──────────────────────────────────────────────────
     def _update_kpi(self, check: str, tot_per: float, tot_cum: float, sil_cur: int, ok: bool):
